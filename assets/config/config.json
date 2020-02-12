@@ -1,0 +1,24 @@
+{
+  "client": {
+
+  },
+  "audio": {
+    "samplingRate": 16000,
+    "encoding": 2,
+    "channels": 1,
+    "features": {
+      "windowLength": 1024,
+      "windowStride": 512,
+      "nFFT" : 512,
+      "numFilters": 20,
+      "numCoefs": 13
+    },
+    "kws": {
+      "modelName": "linto_tflite.tflite",
+      "nFeatures": 30,
+      "featLength": 13,
+      "threshold":0.5,
+      "nAct": 1
+    }
+  }
+}
