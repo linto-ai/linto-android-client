@@ -5,6 +5,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 import java.util.ArrayList;
@@ -30,10 +31,14 @@ public class tflite {
         }
     }
 
-    public byte[] detect(byte[] net_input) {
-        byte[] output = new byte[4];
-        _interpreter.run(net_input, output);
-        return output;
+    public float detect(byte[] net_input) {
+        ByteBuffer input = ByteBuffer.wrap(net_input);
+        ByteBuffer output = ByteBuffer.allocate(4);
+        _interpreter.run(input, output);
+
+        output.rewind();
+        float prob = output.order(ByteOrder.LITTLE_ENDIAN).getFloat();
+        return prob;
     }
 
     public boolean isReady() {
@@ -46,7 +51,6 @@ public class tflite {
         FileChannel fileChannel = inputStream.getChannel();
         long startOffset = fileDescriptor.getStartOffset();
         long declaredLength = fileDescriptor.getDeclaredLength();
-        Log.v("FileLoader", Long.toString(declaredLength));
         return fileChannel.map(FileChannel.MapMode.READ_ONLY, startOffset, declaredLength);
     }
 }

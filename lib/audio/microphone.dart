@@ -14,9 +14,9 @@ class MicrophoneInput {
   Stream<List<int>> _micStream;
   StreamSubscription<List<int>> _listener;
 
-  Function(List<double>) _frameSink;
+  Function(List<num>) _frameSink;
 
-  set frameSink(Function(List<double>) sink) {
+  set frameSink(Function(List<num>) sink) {
     _frameSink = sink;
   }
 
@@ -31,8 +31,8 @@ class MicrophoneInput {
 
   void startListening() {
     if (!_isListening) {
-      _micStream = microphone(sampleRate: _sampleRate, audioFormat: AudioFormat.ENCODING_PCM_16BIT);
-      _listener = _micStream.listen((samples) => _frameSink(samples.map((v) => v.toDouble()).toList()));
+      _micStream = microphone(sampleRate: _sampleRate, audioFormat: AudioFormat.ENCODING_PCM_16BIT, audioSource: AudioSource.MIC);
+      _listener = _micStream.listen((samples) => _frameSink(samples));
       _isListening = true;
       print("start");
     }

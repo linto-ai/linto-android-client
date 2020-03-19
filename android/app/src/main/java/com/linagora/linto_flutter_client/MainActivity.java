@@ -13,16 +13,13 @@ import io.flutter.plugin.common.MethodChannel;
 public class MainActivity extends FlutterActivity {
   //private MethodChannel tfChannel;
   private static final String TF_CHANNEL = "tf_lite";
+  private static final String VAD_CHANNEL = "vader";
   private tflite interpreter = new tflite();
+  private VADer vader = new VADer();
   @Override
   public void configureFlutterEngine(@NonNull FlutterEngine flutterEngine) {
     GeneratedPluginRegistrant.registerWith(flutterEngine);
     createChannels(flutterEngine);
-    //AssetManager assetManager = getApplicationContext().getAssets();
-    /*String[] assetList = assetManager.list("");
-    for (String file : assetList) {
-        Log.v("TAG", file);
-    }*/
   }
     private void createChannels(FlutterEngine flutterEngine) {
       new MethodChannel(flutterEngine.getDartExecutor().getBinaryMessenger(), TF_CHANNEL).setMethodCallHandler(
@@ -41,10 +38,21 @@ public class MainActivity extends FlutterActivity {
                       if (!interpreter.isReady()) {
                           result.error(null, "Failed to detect.", "Model hasn't been loaded.");
                       } else {
-                          byte[] res = interpreter.detect(input);
+                          double res = interpreter.detect(input);
+                          Log.v("Interpreter", "Prob is " + res);
                           result.success(res);
                       }
 
+                  } else {
+                      result.notImplemented();
+                  }
+              }
+      );
+      new MethodChannel(flutterEngine.getDartExecutor().getBinaryMessenger(), VAD_CHANNEL).setMethodCallHandler(
+              (call, result) -> {
+                  if (call.method.equals("isSpeech")) {
+                      byte[] frame = call.argument("frame");
+                      result.success(vader.isSpeech(frame));
                   } else {
                       result.notImplemented();
                   }

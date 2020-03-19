@@ -28,7 +28,8 @@ dependencies:
     git:
       url: https://github.com/truongsinh/tflite_native.git
       ref: d2458d1
-  path_provider: 1.3.0
+  path_provider: 1.5.1
+  audioplayers: ^0.14.0
 
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
@@ -55,6 +56,7 @@ flutter:
     - assets/icons/
     - assets/linto/
     - assets/config/
+    - assets/sounds/
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/assets-and-images/#resolution-aware.
 

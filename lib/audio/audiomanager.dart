@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:typed_data';
 import 'package:flutter/services.dart';
+import 'audioPlayer.dart';
 import 'package:mfcc/mfcc.dart';
 import 'microphone.dart';
 import 'kws.dart';
@@ -25,11 +26,15 @@ class AudioManager {
     return _isDetecting;
   }
 
+  // Debug
+  Function(String) debugPromptFun;
+
   // Processing
   MFCC _mfcc;
   MicrophoneInput _microphone;
   KWS _kws;
   Utterance _utterance;
+  Audio _audio;
 
   //Buffer
   List<double> signalBuffer = List<double>();
@@ -39,24 +44,45 @@ class AudioManager {
     print('config loaded');
     _microphone = MicrophoneInput(_settings['audio']['samplingRate'], _settings['audio']['encoding'], _settings['audio']['channels']);
     _microphone.frameSink = _onAudioFrames;
-    _mfcc = MFCC(_settings['audio']['samplingRate'], _settings['audio']['features']['nFFT'], _settings['audio']['features']['numFilters'], _settings['audio']['features']['numCoefs']);
+    _mfcc = MFCC(_settings['audio']['samplingRate'], _settings['audio']['features']['nFFT'], _settings['audio']['features']['numFilters'], _settings['audio']['features']['numCoefs'], energy: false);
     print('initialized');
     _kws = KWS();
     _kws.loadModel('linto_tflite.tflite');
+    _kws.onDetection = _onKWSpotted;
+    _utterance = Utterance();
+    _utterance.speechCallback =_onSpeechFrame;
+    _utterance.silenceCallback = _onSilenceFrame;
+    _audio = Audio();
   }
 
   // Callback functions
-  void _onAudioFrames(List<double> frames) {
+  void _onAudioFrames(List<num> signal) {
+    _utterance.onFrame(signal);
+    //Stopwatch stopwatch = new Stopwatch()..start();
+    //print('$i mfcc extracted in ${stopwatch.elapsed.inMilliseconds} ms');
+  }
+
+  void _onSilenceFrame(List<int> frame) {
+    debugPromptFun('.....');
+  }
+
+  void _onSpeechFrame(List<num> signal) {
+    debugPromptFun('!!!!!');
+    var frames = signal.map((v) => v.toDouble()).toList();
     signalBuffer.addAll(frames);
-    if (signalBuffer.length >= _settings['audio']['features']['windowLength']) {
-      List<double> frame = signalBuffer.sublist(0,1024);
-      signalBuffer = signalBuffer.sublist(512);
+    while (signalBuffer.length >= _settings['audio']['features']['windowLength']) {
+      List<double> frame = signalBuffer.sublist(0,1024).toList();
+      signalBuffer = signalBuffer.sublist(512).toList();
       var features = _mfcc.process_frame(frame);
-      print(features);
+      _kws.pushFeatures(features);
     }
   }
+
   // Controller
-  void detectUtterance(Function(Uint8List, UtteranceStatus) command) {}
+  void detectUtterance() {
+    _utterance.streamable = false;
+    _utterance.detectUtterance((x, _) => print("Utterance of length ${x.length}"));
+  }
   void cancelUtterance() {}
 
   void startDetecting() {
@@ -79,8 +105,20 @@ class AudioManager {
     return jsonDecode(await rootBundle.loadString(CONFIG_FILE_PATH));
   }
 
+  void _onKWSpotted(double confidence) {
+    if (_isDetecting) {
+      _kws.flushFeatures();
+      playSound();
+      stopDetecting();
+      print("KEYWORD SPOTTED !! at $confidence");
+    }
+  }
+
   void dummyDetect() async {
     await _kws.detect();
   }
 
+  void playSound() {
+    _audio.playAsset('sounds/detection.wav');
+  }
 }

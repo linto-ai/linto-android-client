@@ -63,9 +63,11 @@ flutter {
     source '../..'
 }
 
+
 dependencies {
     testImplementation 'junit:junit:4.12'
     androidTestImplementation 'androidx.test:runner:1.1.1'
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.1.1'
-    implementation 'org.tensorflow:tensorflow-lite:0.0.0-nightly'
+    implementation 'org.tensorflow:tensorflow-lite:2.0.0'
+    implementation 'com.github.gkonovalov:android-vad:1.0.0'
 }

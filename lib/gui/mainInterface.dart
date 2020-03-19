@@ -13,7 +13,7 @@ class MainInterface extends StatefulWidget {
 }
 
 class _MainInterface extends State<MainInterface> {
-
+  var labelText = "Not Listening";
   var audioManager = new AudioManager();
 
   //Interfaces
@@ -28,6 +28,13 @@ class _MainInterface extends State<MainInterface> {
       DeviceOrientation.landscapeRight,
     ]);
     audioManager.initialize();
+    audioManager.debugPromptFun = setDebug;
+  }
+
+  void setDebug(String message){
+    setState(() {
+      labelText = message;
+    });
   }
 
   @override
@@ -35,13 +42,13 @@ class _MainInterface extends State<MainInterface> {
     return Container(
       child: Column(
         children: <Widget>[
-          FlatButton(child: Text('debug'), onPressed: () {
-            /*if (audioManager.isDetecting) {
+          FlatButton(child: Text(labelText), onPressed: () {
+            if (audioManager.isDetecting) {
               audioManager.stopDetecting();
             } else {
               audioManager.startDetecting();
-            }*/
-            audioManager.dummyDetect();
+            }
+            setDebug(audioManager.isDetecting ? "Listening" : "Not Listening");
           }), //debug
           Expanded(child: _display, flex: 4,),
           Expanded(child: _audioControl, flex: 1),
