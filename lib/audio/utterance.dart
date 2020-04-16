@@ -37,6 +37,7 @@ class Utterance {
 
   /// Utterance buffer
   List<int> _utteranceBuffer = List<int>(_SAMPLE_RATE * _BUFFER_MAX_LENGTH);
+
   /// Actual utterance buffer length (sample)
   int _bufferLength = 0;
 
@@ -49,6 +50,8 @@ class Utterance {
   int _speechC = 0;
   int _silenceC = 0;
 
+  /// State
+  bool _utteranceDet = false;
 
   /// Defines if speechCallback shall be called on speech frames.
   bool _streamable = true;
@@ -69,7 +72,7 @@ class Utterance {
   }
 
   Function(List<int>, UtteranceStatus) _utteranceCallback;
-  /// Set the callback function for utterance spotting
+  /// Set the callback function for utterance spotting.
   set utteranceCallback(Function(List<int>, UtteranceStatus) cbFun) {
     _utteranceCallback = cbFun;
   }
@@ -145,6 +148,19 @@ class Utterance {
 
   void detectUtterance(Function(List<int>, UtteranceStatus) callBack) {
     _utteranceCallback = callBack;
+    _silenceC = 0;
+    _speechC = 0;
+    _streamable = false;
+    _utteranceDet = true;
+  }
+
+  void cancelDetUtterance() {
+
+    _onUtteranceEnd();
+  }
+
+  void _onUtteranceEnd() {
+    _streamable = true;
   }
 
   void _writeFile() async {

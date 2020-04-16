@@ -39,6 +39,12 @@ class AudioManager {
   //Buffer
   List<double> signalBuffer = List<double>();
 
+  // CallBacks
+  final VoidCallback onDetection;
+  final VoidCallback onReady;
+
+  AudioManager({this.onDetection, this.onReady}) :super();
+
   void initialize() async {
     _settings = await _loadSettings();
     print('config loaded');
@@ -47,12 +53,13 @@ class AudioManager {
     _mfcc = MFCC(_settings['audio']['samplingRate'], _settings['audio']['features']['nFFT'], _settings['audio']['features']['numFilters'], _settings['audio']['features']['numCoefs'], energy: false);
     print('initialized');
     _kws = KWS();
-    _kws.loadModel('linto_tflite.tflite');
+    await _kws.loadModel('linto_tflite.tflite');
     _kws.onDetection = _onKWSpotted;
     _utterance = Utterance();
     _utterance.speechCallback =_onSpeechFrame;
     _utterance.silenceCallback = _onSilenceFrame;
     _audio = Audio();
+    onReady();
   }
 
   // Callback functions
@@ -63,11 +70,9 @@ class AudioManager {
   }
 
   void _onSilenceFrame(List<int> frame) {
-    debugPromptFun('.....');
   }
 
   void _onSpeechFrame(List<num> signal) {
-    debugPromptFun('!!!!!');
     var frames = signal.map((v) => v.toDouble()).toList();
     signalBuffer.addAll(frames);
     while (signalBuffer.length >= _settings['audio']['features']['windowLength']) {
@@ -109,16 +114,23 @@ class AudioManager {
     if (_isDetecting) {
       _kws.flushFeatures();
       playSound();
+      onDetection();
       stopDetecting();
       print("KEYWORD SPOTTED !! at $confidence");
     }
   }
 
   void dummyDetect() async {
-    await _kws.detect();
+    _kws.flushFeatures();
+    playSound();
+    onDetection();
+    stopDetecting();
+    print("KEYWORD SPOTTED !! at DUMMY");
   }
 
   void playSound() {
     _audio.playAsset('sounds/detection.wav');
   }
 }
+
+typedef VoidCallback = void Function();

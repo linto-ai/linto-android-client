@@ -39,7 +39,7 @@ public class MainActivity extends FlutterActivity {
                           result.error(null, "Failed to detect.", "Model hasn't been loaded.");
                       } else {
                           double res = interpreter.detect(input);
-                          Log.v("Interpreter", "Prob is " + res);
+                          //Log.v("Interpreter", "Prob is " + res);
                           result.success(res);
                       }
 

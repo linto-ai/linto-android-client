@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
-import 'lintoDisplay.dart';
-import 'audioControl.dart';
 import 'package:flutter/services.dart';
+import 'package:linto_flutter_client/audio/audioInput.dart';
 import 'package:linto_flutter_client/audio/audiomanager.dart';
-
+import 'package:linto_flutter_client/gui/calendar.dart';
+import 'package:linto_flutter_client/gui/clock.dart';
+import 'package:linto_flutter_client/gui/lintoDisplay.dart';
+import 'package:linto_flutter_client/gui/weather.dart';
+import 'package:sliding_up_panel/sliding_up_panel.dart';
+import 'package:linto_flutter_client/gui/controls.dart';
 
 class MainInterface extends StatefulWidget {
   MainInterface({Key key}) : super(key: key);
@@ -13,48 +17,82 @@ class MainInterface extends StatefulWidget {
 }
 
 class _MainInterface extends State<MainInterface> {
-  var labelText = "Not Listening";
-  var audioManager = new AudioManager();
-
-  //Interfaces
-  LinTODisplay _display = LinTODisplay();
-  AudioControl _audioControl = AudioControl();
-
+  AudioManager audioManager;
+  PanelController _controller = PanelController();
   @override
-  void initState(){
+  void initState() {
     super.initState();
-    SystemChrome.setPreferredOrientations([
-      DeviceOrientation.landscapeLeft,
-      DeviceOrientation.landscapeRight,
-    ]);
+    audioManager = AudioManager(
+        onDetection: () => onKeyword(),
+        onReady: () => onAudioReady());
     audioManager.initialize();
-    audioManager.debugPromptFun = setDebug;
   }
+    @override
+    Widget build(BuildContext context) {
+     Orientation orientation = MediaQuery.of(context).orientation;
+     return Scaffold(
+       body: SafeArea(
+         child: Center(
+           child: SlidingUpPanel(
+             panel: Center(
+                 child : Row(
+                   children: <Widget>[
+                     Text("Han han")
+                   ],
+                 )
+             ),
+             onPanelClosed: () => onPanelClosed(),
+             body: FractionallySizedBox(
+               child: Container(
+                 child: Column(
+                   children: <Widget>[
+                     Flex(
+                       children: <Widget>[
+                         Clock(),
+                         WeatherWidget()
+                       ],
+                       direction: orientation == Orientation.portrait ? Axis.vertical : Axis.horizontal,
+                       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                     ),
+                     CalendarWidget(),
+                     ControlBar(
+                       onLintoClicked: () => onLinToClicked(),
+                     )
+                   ],
+                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                 ),
+                 padding: EdgeInsets.all(10),
+               ),
+               widthFactor: 0.95,
+               heightFactor: 0.95,
+             ),
+             minHeight: 0,
+             maxHeight: MediaQuery.of(context).size.height * 0.5,
+             backdropEnabled: true,
+             controller: _controller,
+           ),
+         )
+       ),
+     );
+    }
 
-  void setDebug(String message){
-    setState(() {
-      labelText = message;
-    });
-  }
+    void expandPanel(){
+    _controller.open();
+    }
 
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      child: Column(
-        children: <Widget>[
-          FlatButton(child: Text(labelText), onPressed: () {
-            if (audioManager.isDetecting) {
-              audioManager.stopDetecting();
-            } else {
-              audioManager.startDetecting();
-            }
-            setDebug(audioManager.isDetecting ? "Listening" : "Not Listening");
-          }), //debug
-          Expanded(child: _display, flex: 4,),
-          Expanded(child: _audioControl, flex: 1),
-        ],
-      ),
-      padding: EdgeInsets.all(15),
-    );
-  }
+    void onLinToClicked(){
+    audioManager.dummyDetect();
+      expandPanel();
+    }
+    void onKeyword() {
+      expandPanel();
+    }
+
+    void onAudioReady() {
+      audioManager.startDetecting();
+    }
+
+    void onPanelClosed() {
+    audioManager.startDetecting();
+    }
 }

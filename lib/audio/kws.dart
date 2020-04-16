@@ -10,7 +10,7 @@ Uint8List TEST_INPUT = Uint8List.fromList(TEST_BUFFER);
 class KWS {
   static const platform = const MethodChannel('tf_lite');
   Uint8List _featureBuffer = Uint8List(1560);
-  double _threshold = 0.4;
+  double _threshold = 0.3;
   Function(double) _callback = (v) => print('Detected at ' + v.toString());
 
   set onDetection(Function(double) cb) {
@@ -19,7 +19,6 @@ class KWS {
 
   Future<void> loadModel(String modelPath) async {
     var result = await platform.invokeMethod('loadModel', <String, dynamic>{'modelPath': modelPath});
-
   }
 
   Future<void> detect() async {
