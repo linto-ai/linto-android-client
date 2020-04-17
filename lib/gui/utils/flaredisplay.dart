@@ -4,31 +4,41 @@ import 'package:flare_flutter/flare.dart';
 import 'package:flare_flutter/flare_actor.dart';
 import 'package:flare_dart/math/mat2d.dart';
 
-class LinTODisplay extends StatefulWidget {
-  LinTODisplay({Key key}) : super(key: key);
+
+class FlareDisplay extends StatefulWidget {
+  final int width;
+  final int height;
+  final String assetpath;
+  final String animationName;
+  FlareDisplay({Key key, this.width, this.height, this.assetpath, this.animationName}) : super(key: key);
 
   @override
-  _LinTODisplay createState() => new _LinTODisplay();
+  _FlareDisplay createState() => new _FlareDisplay();
 }
 
-class _LinTODisplay extends State<LinTODisplay> with FlareController {
-  String _animation = "Idle"; // Named animation in the flare asset
+class _FlareDisplay extends State<FlareDisplay> with FlareController{
 
-  double _mix = 0.5; // Amount of blending
-  double _speed = 1.0;
-  double _duration = 0.0; // Total elapsed time
-  bool _isPaused = false;
-  bool _isLooped = true;
+  // Widget
+  int _width;
+  int _height;
 
+  // Flare animation
+  String assetPath;
+  String animation;
   ActorAnimation _actor;
 
-  set setLooped(bool looped) {
-    _isLooped = looped;
-  }
+  // Controller
+  double _mix = 0.5; // Amount of blending
+  double _speed = 1.0;
+  double _duration = 0.0;
+
+  // Status
+  bool _isPlaying;
+  bool _isLooped;
 
   @override
   void initialize(FlutterActorArtboard artboard) {
-    _actor = artboard.getAnimation(_animation);
+    _actor = artboard.getAnimation(animation);
   }
 
   @override
@@ -47,7 +57,6 @@ class _LinTODisplay extends State<LinTODisplay> with FlareController {
       _actor.apply(_actor.duration, artboard, _mix);
     }
     return true;
-
   }
 
   @override
@@ -56,9 +65,9 @@ class _LinTODisplay extends State<LinTODisplay> with FlareController {
       child: FlatButton(
         child: FlareActor('assets/linto/linto-idle.flr',
           alignment: Alignment.center,
-          isPaused: _isPaused,
+          isPaused: ! _isPlaying,
           fit: BoxFit.cover,
-          animation: _animation,
+          animation: animation,
           controller: this,
         ),
         onPressed: () {},
@@ -69,4 +78,5 @@ class _LinTODisplay extends State<LinTODisplay> with FlareController {
       height: 300,
     );
   }
+
 }
