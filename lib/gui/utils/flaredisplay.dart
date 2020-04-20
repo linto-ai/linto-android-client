@@ -6,21 +6,21 @@ import 'package:flare_dart/math/mat2d.dart';
 
 
 class FlareDisplay extends StatefulWidget {
-  final int width;
-  final int height;
+  final double width;
+  final double height;
   final String assetpath;
   final String animationName;
-  FlareDisplay({Key key, this.width, this.height, this.assetpath, this.animationName}) : super(key: key);
+  FlareDisplay({Key key, this.width, this.height, this.assetpath, this.animationName,}) : super(key: key);
 
   @override
   _FlareDisplay createState() => new _FlareDisplay();
+
 }
 
 class _FlareDisplay extends State<FlareDisplay> with FlareController{
-
   // Widget
-  int _width;
-  int _height;
+  double _width;
+  double _height;
 
   // Flare animation
   String assetPath;
@@ -33,12 +33,20 @@ class _FlareDisplay extends State<FlareDisplay> with FlareController{
   double _duration = 0.0;
 
   // Status
-  bool _isPlaying;
-  bool _isLooped;
+  bool _isPlaying = true;
+  bool _isLooped = true;
 
   @override
   void initialize(FlutterActorArtboard artboard) {
     _actor = artboard.getAnimation(animation);
+    print("${_actor.duration}");
+  }
+
+  @override
+  void initState() {
+    assetPath = widget.assetpath;
+    animation = widget.animationName;
+    super.initState();
   }
 
   @override
@@ -63,7 +71,7 @@ class _FlareDisplay extends State<FlareDisplay> with FlareController{
   Widget build(BuildContext context) {
     return Container(
       child: FlatButton(
-        child: FlareActor('assets/linto/linto-idle.flr',
+        child: FlareActor(widget.assetpath,
           alignment: Alignment.center,
           isPaused: ! _isPlaying,
           fit: BoxFit.cover,
@@ -73,10 +81,11 @@ class _FlareDisplay extends State<FlareDisplay> with FlareController{
         onPressed: () {},
         splashColor: Colors.transparent,
         highlightColor: Colors.transparent,
+        padding: EdgeInsets.all(0),
       ),
-      width: 300,
-      height: 300,
+      width: widget.width,
+      height: widget.height,
+      decoration: BoxDecoration(border: Border.all()),
     );
   }
-
 }

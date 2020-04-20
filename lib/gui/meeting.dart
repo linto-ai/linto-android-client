@@ -1,8 +1,9 @@
 import 'dart:async';
+import 'package:auto_size_text/auto_size_text.dart';
 import 'package:flutter/material.dart';
 import 'package:linto_flutter_client/gui/clock.dart';
 import 'package:intl/intl.dart';
-import "package:flare_flutter/flare_actor.dart";
+import 'package:linto_flutter_client/gui/utils/flaredisplay.dart';
 import 'package:linto_flutter_client/gui/lintoDisplay.dart';
 import "package:flutter/material.dart";
 import 'package:flutter/services.dart';
@@ -16,12 +17,13 @@ class MeetingInterface extends StatefulWidget {
 
 class _MeetingInterface extends State<MeetingInterface> {
   bool _isPaused = false;
-  String _meetingName = 'Meeting';
+  String _meetingName = 'Point sur les avancées du projet';
 
   DateTime _startTime;
   String _time = '00:00:00';
   String _duration = '00:00';
   Timer _timer;
+
   @override
   void initState() {
     super.initState();
@@ -33,72 +35,90 @@ class _MeetingInterface extends State<MeetingInterface> {
   @override
   Widget build(BuildContext context) {
     Orientation orientation = MediaQuery.of(context).orientation;
-    double lintoSizeFactor = orientation == Orientation.portrait ? 0.6: 0.3;
+    double windowHeight = MediaQuery.of(context).size.height;
+    double windowWidth = MediaQuery.of(context).size.width;
+    double lintoSizeFactor = orientation == Orientation.portrait ? 0.6: 0.35;
     return Scaffold(
         body: SafeArea(
             child: Center(
               child: Column(
                 children: <Widget>[
-                  Container(
-                    padding: EdgeInsets.all(10),
+                  Container(// Time and Rec Icon
                     child: Row(
                       children: <Widget>[
                         Text(_time, style: TextStyle(fontSize: 30),),
-                        Spacer(),
-                        Container(
-                            child: FlareActor('assets/icons/recording.flr',
-                              alignment: Alignment.center,
-                              isPaused: _isPaused,
-                              snapToEnd: true,
-                              fit: BoxFit.cover,
-                              animation: 'recording',
-                            ),
+                        FlareDisplay(assetpath: 'assets/icons/recording.flr',
+                            animationName: 'recording',
                             width: 50,
-                            height: 50
+                            height: 50)
+                      ],
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    ),
+                    padding: EdgeInsets.only(left: 10, right: 10),
+                    decoration: BoxDecoration(border: Border.all(),),
+                  ),
+                  Container(// LinTo and meeting info and controls
+                    child: Flex(
+                      direction: orientation == Orientation.portrait ? Axis.vertical: Axis.horizontal,
+                      children: <Widget>[
+                        FlareDisplay(assetpath: 'assets/linto/linto.flr',
+                          animationName: 'idle',
+                          width: windowWidth * lintoSizeFactor,
+                          height: windowWidth * lintoSizeFactor,),
+                        Container(
+                          child: Column(
+                            children: <Widget>[
+                              Expanded(
+                                child: Container(
+                                  child: AutoSizeText(_meetingName, style: TextStyle(fontSize: 50),textAlign: TextAlign.center,),
+                                ),
+                                flex: 2,
+                              ),
+                              Expanded(
+                                  child: Container(
+                                    child: AutoSizeText(_duration, style: TextStyle(fontSize: 50),textAlign: TextAlign.center,),
+                                  ),
+                                flex: 1,
+                              ),
+                              Expanded(
+                                  child: Container(
+                                    child: Flex(
+                                        direction: orientation == Orientation.portrait ? Axis.vertical: Axis.horizontal,
+                                        children: <Widget>[
+                                          FlatButton(
+                                            child: AutoSizeText("Suspend recording", style: TextStyle(fontSize: 20)),
+                                          ),
+                                          FlatButton(
+                                            child: AutoSizeText("End meeting", style: TextStyle(fontSize: 20)),
+                                          )
+                                      ],
+                                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                                    )
+                                  ),
+                                flex: 2,
+                              ),
+
+
+                            ],
+                          ),
+                          decoration: BoxDecoration(border: Border.all()),
+                          height: orientation == Orientation.portrait ? windowHeight * 0.45: windowWidth * lintoSizeFactor,
+                          width: orientation == Orientation.portrait ? windowWidth : windowWidth - (windowWidth * lintoSizeFactor) - 2,
                         )
                       ],
-                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    ),
+                    decoration: BoxDecoration(border: Border.all()),
+                  ),
+                  Container( // Bottom Bar
+                    child: Row(
+                      children: <Widget>[
+                        
+                      ],
                     ),
                   )
-                  ,
-                  Flex(
-                    direction: orientation == Orientation.portrait ? Axis.vertical : Axis.horizontal,
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: <Widget>[
-                      Container(
-                          child: FlareActor('assets/linto/linto.flr',
-                            alignment: Alignment.center,
-                            isPaused: _isPaused,
-                            fit: BoxFit.cover,
-                            animation: 'idle',
-                            snapToEnd: true,
-                          ),
-                          width: MediaQuery.of(context).size.width * lintoSizeFactor,
-                          height: MediaQuery.of(context).size.width * lintoSizeFactor,
-                      ),
-                      Column(
-                        children: <Widget>[
-                          Text(_meetingName),
-                          Text(_duration),
-                          Flex(
-                            children: <Widget>[
-                              FlatButton(
-                                child: Text('Suspend Recording'),
-                              ),
-                              FittedBox(child: FlatButton(
-                                child : Text('Stop Meeting'),),
-                                fit: BoxFit.cover,
-                              )
-                            ],
-                            direction: orientation == Orientation.portrait ? Axis.vertical : Axis.horizontal,
-                          )
-                        ],
-                      )
-                    ],
-                  )
                 ],
-              ),
-            )
+              )
+            ),
         )
     );
   }
@@ -110,15 +130,22 @@ class _MeetingInterface extends State<MeetingInterface> {
   }
 
   String _formatDuration() {
+    var f = new NumberFormat("#00", "en_US");
     int second = 0;
-    int minutes = 0;
-    int elapsed_time = DateTime.now().second - _startTime.second;
-    minutes = elapsed_time ~/ 60;
+    num minutes = 0;
+    int elapsed_time = (DateTime.now().millisecondsSinceEpoch - _startTime.millisecondsSinceEpoch) ~/ 1000;
+    minutes = elapsed_time / 60;
     second = elapsed_time % 60;
-    return '${minutes}:${second}';
+    return '${f.format(minutes.toInt())}:${f.format(second)}';
   }
 
   String _formatTime() {
     return DateFormat('HH:mm:ss').format(DateTime.now());
+  }
+
+  @override
+  void dispose() {
+    _timer.cancel();
+    super.dispose();
   }
 }
