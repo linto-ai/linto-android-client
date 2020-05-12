@@ -30,8 +30,7 @@ class _WeatherWidgetState extends State<WeatherWidget> {
     Orientation orientation = MediaQuery.of(context).orientation;
     return Container(
       child: WeatherWebview(weatherWidgetExemple),
-      width: 250,
-      height: 150,
+      //decoration: BoxDecoration(border: Border.all(),),
     );
   }
 

@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:linto_flutter_client/audio/audiomanager.dart';
 import 'package:linto_flutter_client/client/client.dart';
 import 'package:linto_flutter_client/gui/mainInterface.dart';
 
 class LoginScreen extends StatefulWidget {
   final LinTOClient client;
-  const LoginScreen({ Key key, this.client }): super(key: key);
+  final AudioManager audioManager;
+  const LoginScreen({ Key key, this.client, this.audioManager }): super(key: key);
   @override
   LoginScreenForm createState() => LoginScreenForm();
 }
@@ -17,6 +19,10 @@ class LoginScreenForm extends State<LoginScreen> {
   //
   // Note: This is a `GlobalKey<FormState>`,
   // not a GlobalKey<MyCustomFormState>.
+
+  String _initialUser;
+  String _initialServer;
+
   final _formKey = GlobalKey<FormState>();
   final _login = TextEditingController();
   final _password = TextEditingController();
@@ -25,6 +31,12 @@ class LoginScreenForm extends State<LoginScreen> {
   final FocusNode _loginFocus = FocusNode();
   final FocusNode _passwordFocus = FocusNode();
   final FocusNode _serverFocus = FocusNode();
+
+  void initState() {
+    super.initState();
+    widget.client.getLastUser().then((result) => _login.text = result );
+    widget.client.getLastServer().then((result) => _server.text = result);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -59,6 +71,7 @@ class LoginScreenForm extends State<LoginScreen> {
                               _loginFocus.unfocus();
                               FocusScope.of(context).requestFocus(_passwordFocus);
                             },
+                            initialValue: _initialUser,
                           ),
                           TextFormField(
                             decoration: InputDecoration(
@@ -78,6 +91,7 @@ class LoginScreenForm extends State<LoginScreen> {
                               _serverFocus.unfocus();
                               FocusScope.of(context).requestFocus(_serverFocus);
                             },
+
                           ),
                           TextFormField(
                             decoration: InputDecoration(
@@ -96,6 +110,7 @@ class LoginScreenForm extends State<LoginScreen> {
                               _passwordFocus.unfocus();
                               onLoginPressed();
                             },
+                            initialValue: _initialServer,
                           ),
                           FlatButton(
                             child: Text('LOGIN'),
@@ -119,9 +134,9 @@ class LoginScreenForm extends State<LoginScreen> {
     if (! _formKey.currentState.validate()) {
       return;
     }
-    var res = await widget.client.requestAuthentification(_login.value.text, _password.value.text, _server.value.text, true);
+    var res = await widget.client.requestAuthentification(_login.value.text, _password.value.text, _server.value.text, false);
     if (res) {
-      Navigator.push(context, MaterialPageRoute(builder: (context) => MainInterface()));
+      Navigator.push(context, MaterialPageRoute(builder: (context) => MainInterface(client: widget.client, audioManager: widget.audioManager,)));
     }
   }
   

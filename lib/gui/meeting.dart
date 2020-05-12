@@ -90,6 +90,7 @@ class _MeetingInterface extends State<MeetingInterface> {
                                           ),
                                           FlatButton(
                                             child: AutoSizeText("End meeting", style: TextStyle(fontSize: 20)),
+                                            onPressed: () => Navigator.pop(context),
                                           )
                                       ],
                                       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -97,22 +98,20 @@ class _MeetingInterface extends State<MeetingInterface> {
                                   ),
                                 flex: 2,
                               ),
-
-
                             ],
                           ),
-                          decoration: BoxDecoration(border: Border.all()),
+                          //decoration: BoxDecoration(border: Border.all()),
                           height: orientation == Orientation.portrait ? windowHeight * 0.45: windowWidth * lintoSizeFactor,
                           width: orientation == Orientation.portrait ? windowWidth : windowWidth - (windowWidth * lintoSizeFactor) - 2,
                         )
                       ],
                     ),
-                    decoration: BoxDecoration(border: Border.all()),
+                    //decoration: BoxDecoration(border: Border.all()),
                   ),
                   Container( // Bottom Bar
                     child: Row(
                       children: <Widget>[
-                        
+
                       ],
                     ),
                   )

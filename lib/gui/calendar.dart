@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:auto_size_text/auto_size_text.dart';
 import 'package:flutter/material.dart';
 
 class CalendarWidget extends StatefulWidget {
@@ -21,8 +22,11 @@ class _CalendarWidget extends State<CalendarWidget> {
   @override
   Widget build(BuildContext context) {
     Orientation orientation = MediaQuery.of(context).orientation;
-    return Column(
-      children: _events.sublist(0, _nEventDisplayed),
+    return Container(
+      //decoration: BoxDecoration(border: Border.all(),),
+      child: Column(
+        children: _events.sublist(0, _nEventDisplayed),
+      ),
     );
   }
 }
@@ -34,11 +38,11 @@ class CalendarEventWidget extends StatefulWidget {
 }
 
 class _CalendarEventWidget extends State<CalendarEventWidget> {
+  String _envent_id;
   String _date = 'Today';
   String _time = '17:00';
   String _title = "Test Event";
-  String _location = "At: Home";
-  String _description = "Test event description";
+  String _description = "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Fusce a semper massa. Maecenas risus nulla, laoreet vel porttitor quis, placerat a felis. Pellentesque malesuada ultrices metus, vel dapibus justo efficitur. ";
   
   @override
   void initState() {
@@ -48,34 +52,31 @@ class _CalendarEventWidget extends State<CalendarEventWidget> {
   @override
   Widget build(BuildContext context) {
     Orientation orientation = MediaQuery.of(context).orientation;
-    return Container(
-      child: Column(
-        children: [
-          Row(
-            children: [
-              Row(
-                children: <Widget>[
-                  Text(_date),
-                  Text(_time),
-                  Text(_location),
-                ],
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              ),
-              Spacer(),
-              Text(_title,),
-              Spacer(),
-            ],
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-          ),
-          Row(
-            children: <Widget>[
-              Text(_description, textAlign: TextAlign.left,)
-            ],
-            mainAxisAlignment: MainAxisAlignment.start,
-          )
-        ],
-        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+    return Expanded(
+      child: Container(
+        padding: EdgeInsets.all(10),
+        child: Column(
+          children: [
+            Expanded(
+                child: Container(
+                  child: Row(
+                    children: <Widget>[
+                      Expanded(child: AutoSizeText(_date, style: TextStyle(fontSize: 200), textAlign: TextAlign.left, maxLines: 1,),flex: 1,),
+                      Expanded(child: AutoSizeText(_time, style: TextStyle(fontSize: 200), textAlign: TextAlign.left, maxLines: 1), flex: 1,),
+                      Expanded(child: AutoSizeText(_title, style: TextStyle(fontSize: 200), textAlign: TextAlign.center, maxLines: 1),flex: 4,),
+                    ],
+                  ),
+                ),
+                flex : 3
+            ),
+            Expanded(
+                child : AutoSizeText(_description, style: TextStyle(fontSize: 200), textAlign: TextAlign.left, maxLines: 3,),
+                flex: 2
+            ),
+          ],
+        ),
       ),
+      flex: 1,
     );
   }
 }

@@ -74,7 +74,7 @@ class _FlareDisplay extends State<FlareDisplay> with FlareController{
         child: FlareActor(widget.assetpath,
           alignment: Alignment.center,
           isPaused: ! _isPlaying,
-          fit: BoxFit.cover,
+          fit: BoxFit.contain,
           animation: animation,
           controller: this,
         ),
@@ -85,7 +85,7 @@ class _FlareDisplay extends State<FlareDisplay> with FlareController{
       ),
       width: widget.width,
       height: widget.height,
-      decoration: BoxDecoration(border: Border.all()),
+      //decoration: BoxDecoration(border: Border.all()),
     );
   }
 }

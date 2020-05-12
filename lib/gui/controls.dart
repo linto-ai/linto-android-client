@@ -23,27 +23,38 @@ class _ControlBar extends State<ControlBar> {
         .of(context)
         .orientation;
     return Container(
+      //decoration: BoxDecoration(border: Border.all(),),
+      padding: EdgeInsets.only(bottom: 20),
       child: Row( // Landscape
         children: <Widget>[
-          FlatButton(
-            child: _micStatus ? Image.asset('assets/icons/mic_on.png', fit: BoxFit.scaleDown, height: 50,) : Image.asset('assets/icons/mic_off.png', fit: BoxFit.scaleDown, height: 50,),
-            onPressed: () {
-              setState(() {
-                _micStatus = !_micStatus;
-              });
-            },
-            splashColor: Colors.transparent,
-            highlightColor: Colors.transparent,
+          Expanded(
+            child: FlatButton(
+              child: _micStatus ? Image.asset('assets/icons/mic_on.png', fit: BoxFit.fitHeight, height: 60, alignment: Alignment.topCenter,) : Image.asset('assets/icons/mic_off.png', fit: BoxFit.fitHeight, height: 60,),
+              onPressed: () {
+                setState(() {
+                  _micStatus = !_micStatus;
+                });
+              },
+              splashColor: Colors.transparent,
+              highlightColor: Colors.transparent,
+            ),
+            flex: 2,
           ),
           Spacer(),
-          FlatButton(
-            child: Image.asset('assets/icons/linto_alpha.png', fit: BoxFit.scaleDown, height: 100,),
-            onPressed: () => this.widget.onLintoClicked(),
+          Expanded(
+            child: FlatButton(
+              child: Image.asset('assets/icons/linto_alpha.png',height: 60, fit: BoxFit.contain),
+              onPressed: () => this.widget.onLintoClicked(),
+            ),
+            flex: 2,
           ),
           Spacer(),
-          FlatButton(
-            child: Image.asset('assets/icons/settings.png', fit: BoxFit.scaleDown, height: 50,),
-          )
+          Expanded(
+            child: FlatButton(
+              child: Image.asset('assets/icons/settings.png', fit: BoxFit.contain, height: 50,),
+            ),
+            flex: 2,
+          ),
         ],
       ),
     );

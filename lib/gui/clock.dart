@@ -1,10 +1,10 @@
 import 'dart:async';
+import 'package:auto_size_text/auto_size_text.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 class Clock extends StatefulWidget {
   Clock({Key key}) : super(key: key);
-
   @override
   _Clock createState() => new _Clock();
 }
@@ -25,14 +25,22 @@ class _Clock extends State<Clock> {
   Widget build(BuildContext context) {
     Orientation orientation = MediaQuery.of(context).orientation;
     return Container(
+      padding: EdgeInsets.all(10),
         child: Column(
           children: <Widget>[
-            Text(_date,
-              style: TextStyle(fontSize: 25),),
-            Text(_time,
-              style: TextStyle(fontSize: 65),),
+            Expanded(
+              child: AutoSizeText(_date,
+                style: TextStyle(fontSize: 200),),
+              flex: 1,
+            ),
+            Expanded(
+              child: AutoSizeText(_time,
+                style: TextStyle(fontSize: 200),),
+              flex: 2,
+            ),
           ],
-        )
+        ),
+      //decoration: BoxDecoration(border: Border.all(),),
       );
 
   }

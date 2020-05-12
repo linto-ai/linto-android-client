@@ -37,13 +37,14 @@ class Utterance {
 
   /// Utterance buffer
   List<int> _utteranceBuffer = List<int>(_SAMPLE_RATE * _BUFFER_MAX_LENGTH);
+  int _currentUttBufferPos = 0;
 
   /// Actual utterance buffer length (sample)
   int _bufferLength = 0;
 
   /// Utterance thresholds (n_frame * [_VAD_FRAME_LENGTH])
   final int _SPEECH_TH = 16; // ~500ms
-  final int _SILENCE_TH = 23; // ~700ms
+  final int _SILENCE_TH = 33; // ~1000ms
   final int _TIMEOUT_TH = 133; // ~4s
 
   /// Utterance counters
@@ -91,6 +92,13 @@ class Utterance {
        currentFrame = _signalBuffer.sublist(0, _VAD_FRAME_LENGTH);
        _signalBuffer = _signalBuffer.sublist(_VAD_FRAME_LENGTH);
        _isSpeech(currentFrame);
+       if (_utteranceDet) { // Add frame to utterance buffer
+         _utteranceBuffer.setAll(_currentUttBufferPos, currentFrame);
+         if (_currentUttBufferPos + _VAD_FRAME_LENGTH > _SAMPLE_RATE * _BUFFER_MAX_LENGTH) {
+           _onUtteranceBufferFull();
+         }
+         //print("Sp : $_speechC | Sil: $_silenceC");
+       }
     }
   }
 
@@ -119,8 +127,9 @@ class Utterance {
       speechFrame += frame;
       _speechCallback(speechFrame);
     }
+    _speechC += 1;
+    _silenceC = 0;
   }
-
   void clear() {
     _bufferLength = 0;
     _followToken = 0;
@@ -137,6 +146,14 @@ class Utterance {
         _addToFrameBuffer(frame);
       }
     }
+    _silenceC += 1;
+    if (_utteranceDet) {
+      if (_silenceC >= _TIMEOUT_TH) {
+        _onUtteranceTimeout();
+      } else if (_silenceC > _SILENCE_TH && _speechC > _SPEECH_TH) {
+        _onUtteranceEnd();
+      }
+    }
   }
 
   void _addToFrameBuffer(List<int> frame) {
@@ -147,6 +164,8 @@ class Utterance {
   }
 
   void detectUtterance(Function(List<int>, UtteranceStatus) callBack) {
+    _currentUttBufferPos = 0;
+    print("Start detec utterance");
     _utteranceCallback = callBack;
     _silenceC = 0;
     _speechC = 0;
@@ -154,20 +173,38 @@ class Utterance {
     _utteranceDet = true;
   }
 
+  void stopDetectUtterance() {
+    _utteranceCallback = null;
+    _utteranceDet = false;
+  }
+
   void cancelDetUtterance() {
-
-    _onUtteranceEnd();
+    _onUtteranceCanceled();
   }
 
+  /// Called when [_utteranceBuffer] has reached full capacity.
+  void _onUtteranceBufferFull() {
+    print('UTTERANCE: buffer full');
+    _utteranceCallback(_utteranceBuffer, UtteranceStatus.maxBufferLength);
+    stopDetectUtterance();
+  }
+  /// Called at utterance end
   void _onUtteranceEnd() {
-    _streamable = true;
+    print('UTTERANCE: threshold reached');
+    print("Sp : $_speechC | Sil: $_silenceC");
+    _utteranceCallback(_utteranceBuffer, UtteranceStatus.thresholdReached);
+    stopDetectUtterance();
   }
-
-  void _writeFile() async {
-    //final directory = await getApplicationDocumentsDirectory();
-    final directory = await getExternalStorageDirectory();
-    print("Directory-> ${directory.path}");
-    var file = File('${directory.path}/audio.pcm');
-    file.writeAsBytes(_utteranceBuffer.sublist(0, _bufferLength).toList());
+  /// Called when [_silenceC] has reach [_TIMEOUT_TH] value
+  void _onUtteranceTimeout() {
+    print('UTTERANCE: timeout');
+    _utteranceCallback(null, UtteranceStatus.timeout);
+    stopDetectUtterance();
+  }
+  /// Called when [cancelDetUtterance] is invoked
+  void _onUtteranceCanceled() {
+    print('UTTERANCE: canceled');
+    _utteranceCallback(null, UtteranceStatus.canceled);
+    stopDetectUtterance();
   }
 }

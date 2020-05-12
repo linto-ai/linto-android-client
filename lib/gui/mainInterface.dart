@@ -5,27 +5,34 @@ import 'package:linto_flutter_client/audio/audiomanager.dart';
 import 'package:linto_flutter_client/gui/calendar.dart';
 import 'package:linto_flutter_client/gui/clock.dart';
 import 'package:linto_flutter_client/gui/lintoDisplay.dart';
+import 'package:linto_flutter_client/gui/meeting.dart';
+import 'package:linto_flutter_client/gui/slidingPanelContent.dart';
 import 'package:linto_flutter_client/gui/weather.dart';
 import 'package:sliding_up_panel/sliding_up_panel.dart';
 import 'package:linto_flutter_client/gui/controls.dart';
+import 'package:linto_flutter_client/client/client.dart';
 
 class MainInterface extends StatefulWidget {
-  MainInterface({Key key}) : super(key: key);
+  final LinTOClient client;
+  final AudioManager audioManager;
+
+  MainInterface({Key key, this.client, this.audioManager}) : super(key: key);
 
   @override
   _MainInterface createState() => new _MainInterface();
 }
 
 class _MainInterface extends State<MainInterface> {
-  AudioManager audioManager;
-  PanelController _controller = PanelController();
+    PanelController _controller = PanelController();
   @override
   void initState() {
     super.initState();
-    audioManager = AudioManager(
-        onDetection: () => onKeyword(),
-        onReady: () => onAudioReady());
-    audioManager.initialize();
+    if (! widget.audioManager.isReady) {
+      widget.audioManager.onReady = onAudioReady;
+      widget.audioManager.initialize();
+    }
+    widget.audioManager.onKeyWordSpotted = onKeyword;
+
   }
     @override
     Widget build(BuildContext context) {
@@ -35,36 +42,43 @@ class _MainInterface extends State<MainInterface> {
          child: Center(
            child: SlidingUpPanel(
              panel: Center(
-                 child : Row(
-                   children: <Widget>[
-                     Text("Han han")
-                   ],
-                 )
+                 child : SlidingPanel()
              ),
              onPanelClosed: () => onPanelClosed(),
-             body: FractionallySizedBox(
-               child: Container(
-                 child: Column(
-                   children: <Widget>[
-                     Flex(
-                       children: <Widget>[
-                         Clock(),
-                         WeatherWidget()
-                       ],
-                       direction: orientation == Orientation.portrait ? Axis.vertical : Axis.horizontal,
-                       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+             body: Container(
+               child: Column(
+                 children: <Widget>[
+                   Expanded(
+                     // Time and weather
+                      child: Container(
+                        padding: EdgeInsets.all(10),
+                        child: Flex(
+                          children: <Widget>[
+                            Expanded(child: Clock()),
+                            Expanded(child: WeatherWidget()),
+                          ],
+                          direction: orientation == Orientation.portrait ? Axis.vertical : Axis.horizontal,
+                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                        ),
+                      ),
+                     flex: 10,
+                   ),
+                   Expanded(
+                     child: FlatButton(
+                       child: CalendarWidget(),
+                       onPressed: () => displayMeeting(),
                      ),
-                     CalendarWidget(),
-                     ControlBar(
+                     flex: 6,
+                   ),
+                   Expanded(
+                     child: ControlBar(
                        onLintoClicked: () => onLinToClicked(),
-                     )
-                   ],
-                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                 ),
-                 padding: EdgeInsets.all(10),
+                     ),
+                   flex: orientation == Orientation.portrait ? 5 : 6,
+                   )
+                 ],
+                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                ),
-               widthFactor: 0.95,
-               heightFactor: 0.95,
              ),
              minHeight: 0,
              maxHeight: MediaQuery.of(context).size.height * 0.5,
@@ -80,19 +94,37 @@ class _MainInterface extends State<MainInterface> {
     _controller.open();
     }
 
+    void closePanel(){
+    _controller.close();
+    }
+
     void onLinToClicked(){
-    audioManager.dummyDetect();
+    widget.audioManager.triggerKeyword();
       expandPanel();
     }
     void onKeyword() {
       expandPanel();
     }
 
+    void onUtteranceStart(){
+
+    }
+
+    void onUtteranceStop(){
+
+    }
+
     void onAudioReady() {
-      audioManager.startDetecting();
+      widget.audioManager.startDetecting();
     }
 
     void onPanelClosed() {
-    audioManager.startDetecting();
+      widget.audioManager.cancelUtterance();
+      widget.audioManager.startDetecting();
+
+    }
+
+    void displayMeeting() {
+      Navigator.push(context, MaterialPageRoute(builder: (context) => MeetingInterface()));
     }
 }
