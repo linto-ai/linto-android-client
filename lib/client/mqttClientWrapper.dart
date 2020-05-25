@@ -33,17 +33,17 @@ class MQTTClientWrapper {
       client.onDisconnected = _onDisconnect;
       client.onConnected = _onConnect;
       client.onSubscribed = _onSubscribe;
-      await _connectClient();
+      await _connectClient(serverLogin, serverPassword);
       if(connectionState == MQTTCurrentConnectionState.CONNECTED) {
         _subscribeToTopic(topic);
       }
   }
 
-  Future<void> _connectClient() async {
+  Future<void> _connectClient(String login, String password) async {
       try {
           print('MQTTClientWrapper::Mosquitto client connecting....');
           connectionState = MQTTCurrentConnectionState.CONNECTING;
-          await client.connect();
+          await client.connect(); // connect(login, password);
       } on Exception catch (e) {
           print('MQTTClientWrapper::client exception - $e');
           connectionState = MQTTCurrentConnectionState.ERROR_WHEN_CONNECTING;

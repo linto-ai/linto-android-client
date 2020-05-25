@@ -18,18 +18,7 @@ class Audio {
   }
 
   void playPCM(List<int> signal, {int sampleRate : 16000, int channels: 1}) {
-
   }
 
-  String _rawSig2Wav(List<int> signal, int sampleRate, int channels, int encoding) {
-    Uint8List header = _generateWavHeader(signal.length, sampleRate, channels, encoding);
-  }
 
-  Uint8List _generateWavHeader(int sigLength, int sampleRate, int channels, int encoding) {
-    Uint8List header = Uint8List(44);
-    Uint32List signalLength = Uint32List.fromList([sigLength]);
-    header.setAll(0, [82, 73, 70, 70]); // RIFF
-    header.setAll(4, signalLength.buffer.asUint8List());
-
-  }
 }

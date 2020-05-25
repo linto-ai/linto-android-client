@@ -37,19 +37,24 @@ class LinTOClient {
     String lastlog = data['client']['last_server'];
     return lastlog;
   }
-
-  Future<bool> requestAuthentification(String login, String password, String authServURI, bool testOveride) async {
+  /// Ask authentification API at [authServURI]
+  /// Return Future<List> containing the success as a boolean and a error message if the authentification failed
+  Future<List> requestAuthentification(String login, String password, String authServURI, bool testOveride) async {
     if (testOveride) {
       print("Auth override");
       _authentificated = true;
-      return true;
+      return [true];
     }
     print("Sending auth request at $authServURI : $login *******");
     Map<String, String> requestHeaders = { 'Content-type': 'application/json', 'Accept': 'application/json' };
-    var response = await http.post(authServURI, body :  json.encode({'login' : login, 'password': password}), headers: requestHeaders);
-    print('Response status: ${response.statusCode}');
-    print('Response body: ${response.body}');
+    var response;
+     response = await http.post(authServURI,
+          body: json.encode({'login': login, 'password': password}),
+          headers: requestHeaders);
+
     if (response.statusCode == 200) {
+      print('Response status: ${response.statusCode}');
+      print('Response body: ${response.body}');
       var res = json.decode(response.body);
       _authServURI = authServURI;
       _login = login;
@@ -61,9 +66,16 @@ class LinTOClient {
       _token = res['auth_token'];
       _authentificated = true;
       connectToBroker(_mqttHost, _mqttPort, _mqttLogin, _mqttPassword);
+    } else if (response.statusCode == 404) {
+      return [false, "Error 404"];
+    } else if (response.statusCode == 403){
+      var res = json.decode(response.body);
+      return [false, "${response.statusCode} : ${res['error']}"];
+    } else {
+      return [false, "${response.statusCode} : authentification error"];
     }
-    return true;
-  }
+    return [true];
+    }
 
   void connectToBroker(String host, String port, String login, String password) {
     String topic = "/tolinto/$login";

@@ -124,10 +124,8 @@ class AudioManager {
 
   void cancelUtterance() {
     if (_isDetectingUtterance) {
-      print("AAAAAAAA");
       _utterance.cancelDetUtterance();
     }
-
   }
 
   void _onUtterance(List<int> audioBuffer, UtteranceStatus status){
@@ -206,18 +204,15 @@ class AudioManager {
   }
 
   void pauseRecording() {
-
   }
 
   void stopRecording() {
-
   }
   /// Get the path to a Document Directory File using [fileName].
   Future<String> getFilePath(String fileName) async {
     final directory = await getApplicationDocumentsDirectory();
     return '${directory.path}/$fileName';
   }
-
 
   ///   SETTERS
   void set onKeyWordSpotted(VoidCallback callback) {

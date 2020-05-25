@@ -42,101 +42,112 @@ class LoginScreenForm extends State<LoginScreen> {
   Widget build(BuildContext context) {
     Orientation orientation = MediaQuery.of(context).orientation;
     return Scaffold(
-        body: SafeArea(
-          child: Center(
-            widthFactor: 0.95,
-            heightFactor: 0.95,
-            child: Form(
-              key: _formKey,
-              child: Flex(
-                  direction: orientation == Orientation.portrait ? Axis.vertical : Axis.horizontal,
-                  children: <Widget>[
-                    Container(
-                      child: Column(
-                        children: <Widget>[
-                          TextFormField(
-                            decoration: InputDecoration(
-                                labelText: 'Login :'
-                            ),
-                            validator: (value)  {
-                              if (value.isEmpty) {
-                                return 'Please enter login';
-                              }
-                              return null;
-                            },
-                            controller: _login,
-                            textInputAction: TextInputAction.next,
-                            focusNode: _loginFocus,
-                            onFieldSubmitted: (term) {
-                              _loginFocus.unfocus();
-                              FocusScope.of(context).requestFocus(_passwordFocus);
-                            },
-                            initialValue: _initialUser,
-                          ),
-                          TextFormField(
-                            decoration: InputDecoration(
-                              labelText: 'Password',
-                            ),
-                            validator: (value)  {
-                              if (value.isEmpty) {
-                                return 'Please enter password';
-                              }
-                              return null;
-                            },
-                            controller: _password,
-                            obscureText: true,
-                            focusNode: _passwordFocus,
-                            textInputAction: TextInputAction.next,
-                            onFieldSubmitted: (term) {
-                              _serverFocus.unfocus();
-                              FocusScope.of(context).requestFocus(_serverFocus);
-                            },
+        body: Builder(
+            builder: (context) =>
+                SafeArea(
+                    child: Center(
+                        widthFactor: 0.95,
+                        heightFactor: 0.95,
+                        child: Form(
+                            key: _formKey,
+                            child: Flex(
+                                direction: orientation == Orientation.portrait ? Axis.vertical : Axis.horizontal,
+                                children: <Widget>[
+                                  Container(
+                                    child: Column(
+                                      children: <Widget>[
+                                        TextFormField(
+                                          decoration: InputDecoration(
+                                              labelText: 'Login :'
+                                          ),
+                                          validator: (value)  {
+                                            if (value.isEmpty) {
+                                              return 'Please enter login';
+                                            }
+                                            return null;
+                                          },
+                                          controller: _login,
+                                          textInputAction: TextInputAction.next,
+                                          focusNode: _loginFocus,
+                                          onFieldSubmitted: (term) {
+                                            _loginFocus.unfocus();
+                                            FocusScope.of(context).requestFocus(_passwordFocus);
+                                          },
+                                          initialValue: _initialUser,
+                                        ),
+                                        TextFormField(
+                                          decoration: InputDecoration(
+                                            labelText: 'Password',
+                                          ),
+                                          validator: (value)  {
+                                            if (value.isEmpty) {
+                                              return 'Please enter password';
+                                            }
+                                            return null;
+                                          },
+                                          controller: _password,
+                                          obscureText: true,
+                                          focusNode: _passwordFocus,
+                                          textInputAction: TextInputAction.next,
+                                          onFieldSubmitted: (term) {
+                                            _serverFocus.unfocus();
+                                            FocusScope.of(context).requestFocus(_serverFocus);
+                                          },
 
-                          ),
-                          TextFormField(
-                            decoration: InputDecoration(
-                                labelText: 'Server'
-                            ),
-                            validator: (value)  {
-                              if (value.isEmpty) {
-                                return 'Please enter server info';
-                              }
-                              return null;
-                            },
-                            controller: _server,
-                            textInputAction: TextInputAction.done,
-                            focusNode: _serverFocus,
-                            onFieldSubmitted: (term) {
-                              _passwordFocus.unfocus();
-                              onLoginPressed();
-                            },
-                            initialValue: _initialServer,
-                          ),
-                          FlatButton(
-                            child: Text('LOGIN'),
-                            onPressed: () => onLoginPressed(),
-                          )
-                        ],
-                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                      ),
-                      padding: EdgeInsets.all(10),
-                    ),
-                    Image.asset('assets/icons/linto_ai.png', fit: BoxFit.fitHeight),
-                  ]
-              )
-          )
-        )
-      ),
-      resizeToAvoidBottomInset: false,
-    );
+                                        ),
+                                        TextFormField(
+                                          decoration: InputDecoration(
+                                              labelText: 'Server'
+                                          ),
+                                          validator: (value)  {
+                                            if (value.isEmpty) {
+                                              return 'Please enter server info';
+                                            }
+                                            return null;
+                                          },
+                                          controller: _server,
+                                          textInputAction: TextInputAction.done,
+                                          focusNode: _serverFocus,
+                                          onFieldSubmitted: (term) {
+                                            _passwordFocus.unfocus();
+                                            onLoginPressed(context);
+                                          },
+                                          initialValue: _initialServer,
+                                        ),
+                                        FlatButton(
+                                          child: Text('LOGIN'),
+                                          onPressed: () => onLoginPressed(context),
+                                        )
+                                      ],
+                                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                                    ),
+                                    padding: EdgeInsets.all(10),
+                                  ),
+                                  Image.asset('assets/icons/linto_ai.png', fit: BoxFit.fitHeight),
+                                ]
+                            )
+                        )
+                    )
+                ),
+        ),
+      resizeToAvoidBottomInset: false,);
   }
-  void onLoginPressed() async{
+  void onLoginPressed(BuildContext scaffoldContext) async{
     if (! _formKey.currentState.validate()) {
+      final snackBarField = SnackBar(
+        content: Text("Missing field"),
+      );
+      Scaffold.of(scaffoldContext).showSnackBar(snackBarField);
       return;
     }
     var res = await widget.client.requestAuthentification(_login.value.text, _password.value.text, _server.value.text, false);
-    if (res) {
+    if (res[0]) {
       Navigator.push(context, MaterialPageRoute(builder: (context) => MainInterface(client: widget.client, audioManager: widget.audioManager,)));
+    } else {
+      final snackBarError = SnackBar(
+        content: Text(res[1]),
+      );
+      Scaffold.of(scaffoldContext).showSnackBar(snackBarError);
     }
   }
   
