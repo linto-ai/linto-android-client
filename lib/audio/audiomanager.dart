@@ -15,6 +15,8 @@ class AudioManager {
   // Settings
   Map _settings;
 
+  VoiceState currentState = VoiceState.INIT;
+
   /// True if input is recorded
   bool _inputRecorded = false;
 
@@ -68,13 +70,13 @@ class AudioManager {
   VoidCallback _onDetection = () => print('Unset onDetection Callback');
   VoidCallback _onReady = () => print('Unset onReady Callback');
   VoidCallback _onUtteranceStart = () => print('Unset onUtteranceStart Callback');
-  VoidCallback _onUtteranceEnd = () => print('Unset onUtteranceEnd Callback');
+  SignalCallback _onUtteranceEnd = (signal) => print('Unset onUtteranceEnd Callback with signal length ${signal.length}');
   VoidCallback _onCanceled = () => print('Unset onCanceled Callback');
 
   // Client callback
   SignalCallback _onCommand = (file) => print('Unset onCommand Callback');
 
-  AudioManager() :super();
+  AudioManager() : super();
 
   void initialize() async {
     _settings = await _loadSettings();
@@ -90,6 +92,8 @@ class AudioManager {
     _utterance.speechCallback =_onSpeechFrame;
     _utterance.silenceCallback = _onSilenceFrame;
     _audio = Audio();
+    setVoiceState(VoiceState.IDLE);
+    _microphone.startListening();
     _onReady();
   }
 
@@ -119,7 +123,9 @@ class AudioManager {
   // Controller
   void detectUtterance() {
     _isDetectingUtterance = true;
+    _onUtteranceStart();
     _utterance.detectUtterance(_onUtterance);
+    setVoiceState(VoiceState.LISTENING);
   }
 
   void cancelUtterance() {
@@ -130,32 +136,29 @@ class AudioManager {
 
   void _onUtterance(List<int> audioBuffer, UtteranceStatus status){
     switch (status) {
-      case UtteranceStatus.thresholdReached: {
-        playSoundEnd();
+      case UtteranceStatus.thresholdReached : {
+        _onUtteranceEnd(audioBuffer);
       }
       break;
       case UtteranceStatus.maxBufferLength: {
-        playSoundEnd();
+        _onUtteranceEnd(audioBuffer);
       }
       break;
       case UtteranceStatus.canceled: {
-        playSoundAborted();
+        _onCanceled();
       }
       break;
       case UtteranceStatus.timeout: {
-        playSoundAborted();
+        _onCanceled();
       }
       break;
     }
     _isDetectingUtterance = false;
-    _onUtteranceEnd();
-    startDetecting();
   }
 
   void startDetecting() {
     if (!_isDetecting) {
       _isDetecting = true;
-      _microphone.startListening();
     }
   }
   void stopDetecting() {
@@ -171,11 +174,9 @@ class AudioManager {
   void _onKWSpotted(double confidence) {
     if (_isDetecting) {
       _kws.flushFeatures();
-      playSound();
       _onDetection();
       stopDetecting();
       print("KEYWORD SPOTTED !! at $confidence");
-      detectUtterance();
     }
   }
 
@@ -204,6 +205,7 @@ class AudioManager {
   }
 
   void pauseRecording() {
+
   }
 
   void stopRecording() {
@@ -227,15 +229,29 @@ class AudioManager {
     _onUtteranceStart = callback;
   }
 
-  void set onUtteranceEnd(VoidCallback callback) {
+  void set onUtteranceEnd(SignalCallback callback) {
     _onUtteranceEnd = callback;
   }
 
   void set onCanceled(VoidCallback callback) {
     _onCanceled = callback;
   }
+
+  void setVoiceState(VoiceState state) {
+    currentState = state;
+    print('Changing state to ${state.toString()}');
+  }
 }
 
 typedef VoidCallback = void Function();
 
-typedef SignalCallback = void Function(File signal);
+typedef SignalCallback = void Function(List<int> signal);
+
+enum VoiceState {
+  INIT,
+  IDLE,
+  LISTENING,
+  REQUESTPENDING,
+  SPEAKING,
+  MUTED
+}

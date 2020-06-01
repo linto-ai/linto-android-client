@@ -175,6 +175,7 @@ class Utterance {
 
   void stopDetectUtterance() {
     _utteranceCallback = null;
+    _streamable = true;
     _utteranceDet = false;
   }
 
@@ -190,10 +191,10 @@ class Utterance {
   }
   /// Called at utterance end
   void _onUtteranceEnd() {
+    stopDetectUtterance();
     print('UTTERANCE: threshold reached');
     print("Sp : $_speechC | Sil: $_silenceC");
     _utteranceCallback(_utteranceBuffer, UtteranceStatus.thresholdReached);
-    stopDetectUtterance();
   }
   /// Called when [_silenceC] has reach [_TIMEOUT_TH] value
   void _onUtteranceTimeout() {

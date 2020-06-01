@@ -1,12 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:linto_flutter_client/audio/audiomanager.dart';
-import 'package:linto_flutter_client/client/client.dart';
+import 'package:linto_flutter_client/logic/maincontroller.dart';
 import 'package:linto_flutter_client/gui/mainInterface.dart';
 
 class LoginScreen extends StatefulWidget {
-  final LinTOClient client;
-  final AudioManager audioManager;
-  const LoginScreen({ Key key, this.client, this.audioManager }): super(key: key);
+  final MainController mainController;
+  const LoginScreen({ Key key, this.mainController}): super(key: key);
   @override
   LoginScreenForm createState() => LoginScreenForm();
 }
@@ -19,6 +17,7 @@ class LoginScreenForm extends State<LoginScreen> {
   //
   // Note: This is a `GlobalKey<FormState>`,
   // not a GlobalKey<MyCustomFormState>.
+  MainController _mainController;
 
   String _initialUser;
   String _initialServer;
@@ -34,8 +33,9 @@ class LoginScreenForm extends State<LoginScreen> {
 
   void initState() {
     super.initState();
-    widget.client.getLastUser().then((result) => _login.text = result );
-    widget.client.getLastServer().then((result) => _server.text = result);
+    _mainController = widget.mainController;
+    _mainController.client.getLastUser().then((result) => _login.text = result );
+    _mainController.client.getLastServer().then((result) => _server.text = result);
   }
 
   @override
@@ -54,6 +54,7 @@ class LoginScreenForm extends State<LoginScreen> {
                                 direction: orientation == Orientation.portrait ? Axis.vertical : Axis.horizontal,
                                 children: <Widget>[
                                   Container(
+                                    width: orientation == Orientation.portrait ? MediaQuery.of(context).size.width : MediaQuery.of(context).size.width * 0.5,
                                     child: Column(
                                       children: <Widget>[
                                         TextFormField(
@@ -78,6 +79,7 @@ class LoginScreenForm extends State<LoginScreen> {
                                         TextFormField(
                                           decoration: InputDecoration(
                                             labelText: 'Password',
+
                                           ),
                                           validator: (value)  {
                                             if (value.isEmpty) {
@@ -121,7 +123,7 @@ class LoginScreenForm extends State<LoginScreen> {
                                       ],
                                       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                                     ),
-                                    padding: EdgeInsets.all(10),
+                                    padding: EdgeInsets.all(20),
                                   ),
                                   Image.asset('assets/icons/linto_ai.png', fit: BoxFit.fitHeight),
                                 ]
@@ -140,9 +142,9 @@ class LoginScreenForm extends State<LoginScreen> {
       Scaffold.of(scaffoldContext).showSnackBar(snackBarField);
       return;
     }
-    var res = await widget.client.requestAuthentification(_login.value.text, _password.value.text, _server.value.text, false);
+    var res = await _mainController.client.requestAuthentification(_login.value.text, _password.value.text, _server.value.text, false);
     if (res[0]) {
-      Navigator.push(context, MaterialPageRoute(builder: (context) => MainInterface(client: widget.client, audioManager: widget.audioManager,)));
+      Navigator.push(context, MaterialPageRoute(builder: (context) => MainInterface(mainController: _mainController,)));
     } else {
       final snackBarError = SnackBar(
         content: Text(res[1]),

@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:mqtt_client/mqtt_client.dart';
 import 'package:mqtt_client/mqtt_server_client.dart';
 
@@ -89,5 +90,12 @@ class MQTTClientWrapper {
   void _onSubscribe(String topic) {
     print('MQTTClientWrapper::Subscription confirmed for topic $topic');
     subscriptionState = MQTTSubscriptionState.SUBSCRIBED;
+  }
+
+  void publish(Map<String, dynamic> payload) {
+    var payload_formated = jsonEncode(payload);
+    MqttClientPayloadBuilder builder = MqttClientPayloadBuilder();
+    builder.addString(payload_formated);
+    client.publishMessage('fromlinto/', MqttQos.exactlyOnce, builder.payload);
   }
 }

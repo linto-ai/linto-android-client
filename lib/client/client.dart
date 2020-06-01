@@ -82,4 +82,8 @@ class LinTOClient {
     mqttClient = MQTTClientWrapper((msg) => print("Error : $msg"), (msg) => print("Message ! $msg"));
     mqttClient.setupClient(host, port, login, password, topic);
   }
+
+  void sendMessage(Map<String, dynamic> message) {
+    mqttClient.publish(message);
+  }
 }
