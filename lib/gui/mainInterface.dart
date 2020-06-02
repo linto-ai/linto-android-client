@@ -65,13 +65,13 @@ class _MainInterface extends State<MainInterface> implements VoiceUIController{
                        ),
                        flex: 10,
                      ),
-                     Expanded(
+                     /*Expanded(
                        child: FlatButton(
                          child: CalendarWidget(),
                          onPressed: () => displayMeeting(),
                        ),
                        flex: 6,
-                     ),
+                     ),*/
                      Expanded(
                        child: ControlBar(
                          onLintoClicked: () => onLinToClicked(),

@@ -1,13 +1,15 @@
 import 'dart:typed_data';
 
-ByteData rawSig2Wav(List<int> signal, int sampleRate, int channels, int encoding) {
+Uint8List rawSig2Wav(List<int> signal, int sampleRate, int channels, int encoding) {
   Uint8List header = generateWavHeader(signal.length, sampleRate, channels, encoding);
-  Uint16List signal_16 = Uint16List.fromList(signal); // TODO Check conversion endian  ?
-  Uint8List waveContent = Uint8List(header.length + signal_16.length * 2);
+  Uint8List signal_uint8 = listIntToUintList(signal);
+  Uint8List waveContent = Uint8List(header.length + signal_uint8.length);
   waveContent.setAll(0, header);
-  waveContent.setAll(header.length, Uint8List.fromList(signal_16.buffer.asUint8List()));
+  waveContent.setAll(header.length, signal_uint8);
+  return waveContent;
 }
 
+/// Generates a wav header with given signal parameters
 Uint8List generateWavHeader(int sigLength, int sampleRate, int channels, int encoding) {
   Uint8List header = Uint8List(44); // Header is 44 bytes long
   header.setAll(0, [82, 73, 70, 70]); // 'RIFF'
@@ -25,4 +27,8 @@ Uint8List generateWavHeader(int sigLength, int sampleRate, int channels, int enc
   header.setAll(36, [100, 97, 116, 97]); // 'data' 4 bytes
   header.setAll(40, Uint32List.fromList([sigLength]).buffer.asUint8List());
   return header;
+}
+/// Converts a List<int> to a Uint8List with little endian int16 encoding
+Uint8List listIntToUintList(List<int> signal) {
+  return Int16List.fromList(signal).buffer.asUint8List();
 }

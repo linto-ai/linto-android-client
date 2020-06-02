@@ -84,6 +84,7 @@ class LinTOClient {
   }
 
   void sendMessage(Map<String, dynamic> message) {
+    print(message);
     mqttClient.publish(message);
   }
 }

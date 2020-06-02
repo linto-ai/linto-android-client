@@ -20,5 +20,4 @@ class Audio {
   void playPCM(List<int> signal, {int sampleRate : 16000, int channels: 1}) {
   }
 
-
 }

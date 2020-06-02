@@ -6,6 +6,7 @@ import 'package:linto_flutter_client/audio/audiomanager.dart';
 import 'package:linto_flutter_client/audio/audioPlayer.dart';
 import 'package:linto_flutter_client/logic/uicontroller.dart';
 import 'package:linto_flutter_client/audio/audioPlayer.dart';
+import 'package:linto_flutter_client/audio/utils/wav.dart';
 
 class MainController {
   final LinTOClient client = LinTOClient(); // Network connectivity
@@ -35,6 +36,10 @@ class MainController {
     if (state == TransactionState.LISTENNING) {
       audioManager.cancelUtterance();
     }
+    state = TransactionState.IDLE;
+    if (! audioManager.isDetecting) {
+      audioManager.startDetecting();
+    }
   }
 
   void _onAudioReady() {
@@ -48,19 +53,20 @@ class MainController {
 
   void _onKeywordSpotted() {
     currentUI.onKeywordSpotted();
+    _audioPlayer.playAsset(audioAssets['START']);
     audioManager.detectUtterance();
     state = TransactionState.LISTENNING;
   }
 
   void _onUtteranceStart() {
-    _audioPlayer.playAsset(audioAssets['START']);
+
     currentUI.onUtteranceStart();
   }
 
   void _onUtteranceEnd(List<int> signal) {
     currentUI.onUtteranceEnd();
     _audioPlayer.playAsset(audioAssets['STOP']);
-    client.sendMessage({'message': Uint8List.fromList((signal))});
+    client.sendMessage({'audio': rawSig2Wav(signal, 16000, 1, 16)});
     state = TransactionState.REQUESTPENDING;
     currentUI.onRequestPending();
   }
@@ -71,6 +77,7 @@ class MainController {
     state = TransactionState.IDLE;
     audioManager.startDetecting();
   }
+
 }
 
 enum TransactionState {

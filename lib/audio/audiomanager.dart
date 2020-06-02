@@ -156,6 +156,7 @@ class AudioManager {
     _isDetectingUtterance = false;
   }
 
+
   void startDetecting() {
     if (!_isDetecting) {
       _isDetecting = true;

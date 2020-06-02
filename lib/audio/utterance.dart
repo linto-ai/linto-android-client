@@ -94,6 +94,7 @@ class Utterance {
        _isSpeech(currentFrame);
        if (_utteranceDet) { // Add frame to utterance buffer
          _utteranceBuffer.setAll(_currentUttBufferPos, currentFrame);
+         _currentUttBufferPos += currentFrame.length;
          if (_currentUttBufferPos + _VAD_FRAME_LENGTH > _SAMPLE_RATE * _BUFFER_MAX_LENGTH) {
            _onUtteranceBufferFull();
          }
@@ -191,10 +192,10 @@ class Utterance {
   }
   /// Called at utterance end
   void _onUtteranceEnd() {
-    stopDetectUtterance();
     print('UTTERANCE: threshold reached');
     print("Sp : $_speechC | Sil: $_silenceC");
-    _utteranceCallback(_utteranceBuffer, UtteranceStatus.thresholdReached);
+    _utteranceCallback(_utteranceBuffer.sublist(0, _currentUttBufferPos), UtteranceStatus.thresholdReached);
+    stopDetectUtterance();
   }
   /// Called when [_silenceC] has reach [_TIMEOUT_TH] value
   void _onUtteranceTimeout() {

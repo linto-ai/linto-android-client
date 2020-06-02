@@ -31,7 +31,7 @@ class MicrophoneInput {
 
   void startListening() {
     if (!_isListening) {
-      _micStream = microphone(sampleRate: _sampleRate, audioFormat: AudioFormat.ENCODING_PCM_16BIT, audioSource: AudioSource.UNPROCESSED);
+      _micStream = microphone(sampleRate: _sampleRate, audioFormat: AudioFormat.ENCODING_PCM_16BIT, audioSource: AudioSource.VOICE_RECOGNITION);
       _listener = _micStream.listen((samples) => _frameSink(samples));
       _isListening = true;
       print("start");
