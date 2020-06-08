@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:linto_flutter_client/logic/customtypes.dart';
 import 'package:mqtt_client/mqtt_client.dart';
 import 'package:mqtt_client/mqtt_server_client.dart';
 
@@ -20,8 +21,16 @@ class MQTTClientWrapper {
   MQTTCurrentConnectionState connectionState = MQTTCurrentConnectionState.IDLE;
   MQTTSubscriptionState subscriptionState = MQTTSubscriptionState.IDLE;
 
-  Function(String) _onError;
-  Function(String) _onMessage = (message) => print(message);
+  MsgCallback _onError;
+  MsgCallback _onMessage = (message) => print(message);
+
+  set onMessage(MsgCallback cb) {
+    _onMessage = cb;
+  }
+
+  set onError(MsgCallback cb) {
+    _onError = cb;
+  }
 
   MQTTClientWrapper(Function(String) onError, Function(String) onMessage) {
     _onError = onError;
@@ -96,6 +105,6 @@ class MQTTClientWrapper {
     var payload_formated = jsonEncode(payload);
     MqttClientPayloadBuilder builder = MqttClientPayloadBuilder();
     builder.addString(payload_formated);
-    client.publishMessage('fromlinto/', MqttQos.exactlyOnce, builder.payload);
+    client.publishMessage('fromlinto/test', MqttQos.exactlyOnce, builder.payload);
   }
 }

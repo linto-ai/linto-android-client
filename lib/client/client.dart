@@ -5,6 +5,7 @@ import 'dart:io';
 import 'package:path_provider/path_provider.dart';
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:linto_flutter_client/client/mqttClientWrapper.dart';
+import 'package:linto_flutter_client/logic/customtypes.dart';
 
 // MQTT client
 // Refresh token
@@ -23,6 +24,10 @@ class LinTOClient {
   bool _authentificated = false;
 
   MQTTClientWrapper mqttClient;
+
+  set onMQTTMsg(MsgCallback cb) {
+    mqttClient.onMessage = cb;
+  }
 
   Future<String> getLastUser() async {
     String content =  await rootBundle.loadString('assets/config/config.json');
@@ -78,7 +83,7 @@ class LinTOClient {
     }
 
   void connectToBroker(String host, String port, String login, String password) {
-    String topic = "/tolinto/$login";
+    String topic = "tolinto/$login";
     mqttClient = MQTTClientWrapper((msg) => print("Error : $msg"), (msg) => print("Message ! $msg"));
     mqttClient.setupClient(host, port, login, password, topic);
   }

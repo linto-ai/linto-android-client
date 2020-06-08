@@ -1,7 +1,7 @@
 {
   "client": {
     "last_login" : "test",
-    "last_server" : "http://10.31.5.31:5000/api/auth"
+    "last_server" : "http://192.168.0.16:5000/api/auth"
   },
   "audio": {
     "samplingRate": 16000,

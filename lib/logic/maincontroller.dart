@@ -1,17 +1,21 @@
+import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:linto_flutter_client/audio/utterance.dart';
 import 'package:linto_flutter_client/client/client.dart';
 import 'package:linto_flutter_client/audio/audiomanager.dart';
 import 'package:linto_flutter_client/audio/audioPlayer.dart';
+import 'package:linto_flutter_client/logic/customtypes.dart';
 import 'package:linto_flutter_client/logic/uicontroller.dart';
 import 'package:linto_flutter_client/audio/audioPlayer.dart';
 import 'package:linto_flutter_client/audio/utils/wav.dart';
+import 'package:linto_flutter_client/audio/tts.dart';
 
 class MainController {
   final LinTOClient client = LinTOClient(); // Network connectivity
   final AudioManager audioManager = AudioManager(); // Audio input
   final Audio _audioPlayer = Audio(); // Audio output
+  final TTS _tts = TTS(); // Text to speech
   VoiceUIController currentUI; // UI interface
 
   TransactionState state = TransactionState.INITIALIZING;
@@ -25,8 +29,21 @@ class MainController {
     if (! audioManager.isReady) {
       audioManager.onReady = _onAudioReady;
       audioManager.initialize();
+      _tts.initTts();
+      state = TransactionState.IDLE;
+      client.onMQTTMsg = _onMessage;
     }
   }
+
+  void _onMessage(String msg) {
+    print("MESSAGE RECEIVED");
+    var decodedmsg = jsonDecode(msg);
+    if (decodedmsg.keys.contains('say')) {
+      _tts.speak(decodedmsg['say']);
+    }
+  }
+
+
 
   void triggerKeyWord() {
     audioManager.triggerKeyword();
@@ -77,6 +94,8 @@ class MainController {
     state = TransactionState.IDLE;
     audioManager.startDetecting();
   }
+
+
 
 }
 

@@ -8,6 +8,7 @@ import 'package:mfcc/mfcc.dart';
 import 'microphone.dart';
 import 'kws.dart';
 import 'utterance.dart';
+import 'package:linto_flutter_client/logic/customtypes.dart';
 
 final String CONFIG_FILE_PATH = "assets/config/config.json";
 
@@ -244,9 +245,6 @@ class AudioManager {
   }
 }
 
-typedef VoidCallback = void Function();
-
-typedef SignalCallback = void Function(List<int> signal);
 
 enum VoiceState {
   INIT,
