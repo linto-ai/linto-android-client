@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:linto_flutter_client/logic/maincontroller.dart';
 import 'package:linto_flutter_client/gui/mainInterface.dart';
 
@@ -134,7 +135,8 @@ class LoginScreenForm extends State<LoginScreen> {
         ),
       resizeToAvoidBottomInset: false,);
   }
-  void onLoginPressed(BuildContext scaffoldContext) async{
+  void onLoginPressed(BuildContext scaffoldContext) async {
+    SystemChannels.textInput.invokeMethod('TextInput.hide');
     if (! _formKey.currentState.validate()) {
       final snackBarField = SnackBar(
         content: Text("Missing field"),

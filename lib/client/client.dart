@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:mqtt_client/mqtt_client.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
@@ -42,6 +44,7 @@ class LinTOClient {
     String lastlog = data['client']['last_server'];
     return lastlog;
   }
+  
   /// Ask authentification API at [authServURI]
   /// Return Future<List> containing the success as a boolean and a error message if the authentification failed
   Future<List> requestAuthentification(String login, String password, String authServURI, bool testOveride) async {
@@ -53,34 +56,99 @@ class LinTOClient {
     print("Sending auth request at $authServURI : $login *******");
     Map<String, String> requestHeaders = { 'Content-type': 'application/json', 'Accept': 'application/json' };
     var response;
-     response = await http.post(authServURI,
-          body: json.encode({'login': login, 'password': password}),
-          headers: requestHeaders);
+    try {
+      response = await http.post("$authServURI/auth",
+          body: json.encode({'login': login, 'password': password, 'client' : 'android'}),
+          headers: requestHeaders).timeout(Duration(seconds: 5));
+    } on TimeoutException catch (_) {
+      return [false, "Timeout: server did not respond in time"];
+    } on SocketException catch (_) {
+      return [false, "SocketException: Could not reach authentification server."];
+    }
 
-    if (response.statusCode == 200) {
-      print('Response status: ${response.statusCode}');
-      print('Response body: ${response.body}');
-      var res = json.decode(response.body);
-      _authServURI = authServURI;
-      _login = login;
-      _password = password;
-      _mqttHost = res['mqtt_uri'];
-      _mqttPort = res['mqtt_port'];
-      _mqttLogin = res['mqtt_login'];
-      _mqttPassword = res['mqtt_password'];
-      _token = res['auth_token'];
-      _authentificated = true;
-      connectToBroker(_mqttHost, _mqttPort, _mqttLogin, _mqttPassword);
-    } else if (response.statusCode == 404) {
-      return [false, "Error 404"];
-    } else if (response.statusCode == 403){
-      var res = json.decode(response.body);
-      return [false, "${response.statusCode} : ${res['error']}"];
-    } else {
-      return [false, "${response.statusCode} : authentification error"];
+    switch(response.statusCode) {
+      case 202: {
+        print('Response status: ${response.statusCode}');
+        print('Response body: ${response.body}');
+        var res = json.decode(response.body);
+        _authServURI = authServURI;
+        _login = login;
+        _password = password;
+        _token = res['auth_token'];
+
+        _mqttHost = res['mqtt_uri'];
+        _mqttPort = res['mqtt_port'];
+        _mqttLogin = res['mqtt_login'];
+        _mqttPassword = res['mqtt_password'];
+
+        _authentificated = true;
+        connectToBroker(_mqttHost, _mqttPort, _mqttLogin, _mqttPassword);
+        return [true];
+      }
+      break;
+
+      case 401: {
+        var res = json.decode(response.body);
+        return [false, "${response.statusCode} : ${res['error']}"];
+      }
+      break;
+
+      case 404: {
+        return [false, "Error 404"];
+      }
+      break;
+
+      default: {
+        return [false, "${response.statusCode} : authentification error"];
+      }
+      break;
     }
-    return [true];
+  }
+
+  Future<Map<String, String>> requestScopes(String scopeServURI) async {
+    print("Requesting scopes from server ...");
+    Map<String, String> requestHeaders = { 'Content-type': 'application/json', 'Accept': 'application/json', 'Authorization' : 'Bearer $_token'  };
+    var response;
+    try {
+      response = await http.get("$scopeServURI/scopes", headers: requestHeaders);
+    } on TimeoutException catch (_) {
+
+    } on SocketException catch (_) {
+
     }
+
+    switch(response.statusCode) {
+      case 202: {
+        print('Response status: ${response.statusCode}');
+        print('Response body: ${response.body}');
+        var res = json.decode(response.body);
+
+        return jsonDecode(res);
+      }
+      break;
+
+      case 401: {
+        var res = json.decode(response.body);
+        return {};
+      }
+      break;
+
+      case 404: {
+        return {};
+      }
+      break;
+
+      default: {
+        return {};
+      }
+      break;
+    }
+
+  }
+
+  Future requestScopeInfo(String scopeServURI) async {
+    Map<String, String> requestHeaders = { 'Content-type': 'application/json', 'Accept': 'application/json', 'Authorization' : 'Bearer $_token' };
+  }
 
   void connectToBroker(String host, String port, String login, String password) {
     String topic = "tolinto/$login";
@@ -92,4 +160,6 @@ class LinTOClient {
     print(message);
     mqttClient.publish(message);
   }
+
+
 }
