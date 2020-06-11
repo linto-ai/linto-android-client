@@ -5,9 +5,11 @@ import 'package:linto_flutter_client/logic/customtypes.dart';
 import 'package:linto_flutter_client/logic/maincontroller.dart';
 import 'package:linto_flutter_client/gui/mainInterface.dart';
 
+
+
 class LoginScreen extends StatefulWidget {
   final MainController mainController;
-  const LoginScreen({ Key key, this.mainController}): super(key: key);
+  const LoginScreen({ Key key, this.mainController}) : super(key: key);
   @override
   LoginScreenForm createState() => LoginScreenForm();
 }
@@ -39,6 +41,7 @@ class LoginScreenForm extends State<LoginScreen> {
     _mainController = widget.mainController;
     _mainController.client.getLastUser().then((result) => _login.text = result );
     _mainController.client.getLastServer().then((result) => _server.text = result);
+
   }
 
   @override
@@ -139,12 +142,12 @@ class LoginScreenForm extends State<LoginScreen> {
   }
 
   void onLoginPressed(BuildContext scaffoldContext) async {
+    if (! await _mainController.requestPermissions()) {
+      displaySnackMessage(scaffoldContext, "Permissions missing");
+    }
     SystemChannels.textInput.invokeMethod('TextInput.hide');
     if (! _formKey.currentState.validate()) {
-      final snackBarField = SnackBar(
-        content: Text("Missing field"),
-      );
-      Scaffold.of(scaffoldContext).showSnackBar(snackBarField);
+      displaySnackMessage(scaffoldContext, "Missing field");
       return;
     }
 

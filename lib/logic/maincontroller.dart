@@ -1,16 +1,13 @@
 import 'dart:convert';
-import 'dart:typed_data';
 
-
-import 'package:linto_flutter_client/audio/utterance.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:linto_flutter_client/client/client.dart';
 import 'package:linto_flutter_client/audio/audiomanager.dart';
 import 'package:linto_flutter_client/audio/audioPlayer.dart';
-import 'package:linto_flutter_client/logic/customtypes.dart';
 import 'package:linto_flutter_client/logic/uicontroller.dart';
-import 'package:linto_flutter_client/audio/audioPlayer.dart';
 import 'package:linto_flutter_client/audio/utils/wav.dart';
 import 'package:linto_flutter_client/audio/tts.dart';
+
 
 class MainController {
   final LinTOClient client = LinTOClient(); // Network connectivity
@@ -25,6 +22,20 @@ class MainController {
                                            'STOP': 'sounds/detectEnd.wav',
                                            'CANCELED' : 'sounds/canceled.wav'
   };
+
+  Future<bool> requestPermissions() async {
+    if (! await Permission.microphone.status.isGranted) {
+      if( ! await Permission.microphone.request().isGranted) {
+        return false;
+      }
+    }
+    if (! await Permission.mediaLibrary.status.isGranted) {
+      if( ! await Permission.mediaLibrary.request().isGranted) {
+        return false;
+      }
+    }
+    return true;
+  }
 
   void initializeAudio() {
     if (! audioManager.isReady) {
