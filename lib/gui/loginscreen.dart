@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:linto_flutter_client/gui/scopedialog.dart';
+import 'package:linto_flutter_client/logic/customtypes.dart';
 import 'package:linto_flutter_client/logic/maincontroller.dart';
 import 'package:linto_flutter_client/gui/mainInterface.dart';
 
@@ -135,6 +137,7 @@ class LoginScreenForm extends State<LoginScreen> {
         ),
       resizeToAvoidBottomInset: false,);
   }
+
   void onLoginPressed(BuildContext scaffoldContext) async {
     SystemChannels.textInput.invokeMethod('TextInput.hide');
     if (! _formKey.currentState.validate()) {
@@ -144,15 +147,42 @@ class LoginScreenForm extends State<LoginScreen> {
       Scaffold.of(scaffoldContext).showSnackBar(snackBarField);
       return;
     }
-    var res = await _mainController.client.requestAuthentification(_login.value.text, _password.value.text, _server.value.text, false);
-    if (res[0]) {
-      Navigator.push(context, MaterialPageRoute(builder: (context) => MainInterface(mainController: _mainController,)));
-    } else {
-      final snackBarError = SnackBar(
-        content: Text(res[1]),
-      );
-      Scaffold.of(scaffoldContext).showSnackBar(snackBarError);
+
+    // 1- Request authentification token
+    try {
+      await _mainController.client.requestAuthentification(_login.value.text, _password.value.text, _server.value.text);
+    } on ClientErrorException catch(error) {
+      displaySnackMessage(scaffoldContext, error.error.toString(), isError: true);
+      return;
     }
+    // 2- Request scopes
+    var scopes;
+    try {
+      scopes = await _mainController.client.requestScopes();
+    } on ClientErrorException catch(error) {
+      displaySnackMessage(scaffoldContext, error.error.toString(), isError: true);
+      return;
+    }
+    print(scopes);
+
+    // 3 Select scope
+    var selectedScope = await showScopeDialog(scaffoldContext, scopes);
+
+    // 4- Establish connexion to broker
+    var success = await _mainController.client.setScope(selectedScope);
+    if (!success) {
+      displaySnackMessage(scaffoldContext, 'Could not connect to broker', isError: true);
+      return;
+    }
+    Navigator.push(context, MaterialPageRoute(builder: (context) => MainInterface(mainController: _mainController,)));
+  }
+
+  void displaySnackMessage(BuildContext context, String message, {bool isError: false}) async {
+    final snackBarError = SnackBar(
+      content: Text(message),
+      backgroundColor: isError ? Colors.red : Color(0x3db5e4),
+    );
+    Scaffold.of(context).showSnackBar(snackBarError);
   }
   
 }

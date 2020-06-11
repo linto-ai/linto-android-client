@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:typed_data';
 
+
 import 'package:linto_flutter_client/audio/utterance.dart';
 import 'package:linto_flutter_client/client/client.dart';
 import 'package:linto_flutter_client/audio/audiomanager.dart';
@@ -42,8 +43,6 @@ class MainController {
       _tts.speak(decodedmsg['say']);
     }
   }
-
-
 
   void triggerKeyWord() {
     audioManager.triggerKeyword();
@@ -94,9 +93,6 @@ class MainController {
     state = TransactionState.IDLE;
     audioManager.startDetecting();
   }
-
-
-
 }
 
 enum TransactionState {

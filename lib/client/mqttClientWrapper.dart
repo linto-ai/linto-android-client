@@ -36,20 +36,20 @@ class MQTTClientWrapper {
     _onError = onError;
   }
 
-  void setupClient(String serverURI, String serverPort, String serverLogin, String serverPassword, String topic) async {
-      client = MqttServerClient.withPort(serverURI, serverLogin, int.parse(serverPort));
+  void setupClient(String serverURI, String serverPort, String deviceName, String topic,) async {
+      client = MqttServerClient.withPort(serverURI, deviceName, int.parse(serverPort));
       client.logging(on: false);
       client.keepAlivePeriod = 20;
       client.onDisconnected = _onDisconnect;
       client.onConnected = _onConnect;
       client.onSubscribed = _onSubscribe;
-      await _connectClient(serverLogin, serverPassword);
+      await _connectClient();
       if(connectionState == MQTTCurrentConnectionState.CONNECTED) {
         _subscribeToTopic(topic);
       }
   }
 
-  Future<void> _connectClient(String login, String password) async {
+  Future<void> _connectClient() async {
       try {
           print('MQTTClientWrapper::Mosquitto client connecting....');
           connectionState = MQTTCurrentConnectionState.CONNECTING;
