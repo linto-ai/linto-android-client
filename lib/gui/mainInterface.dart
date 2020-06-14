@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:linto_flutter_client/gui/calendar.dart';
 import 'package:linto_flutter_client/gui/clock.dart';
 import 'package:linto_flutter_client/gui/meeting.dart';
+import 'package:linto_flutter_client/gui/optionsUI.dart';
 import 'package:linto_flutter_client/gui/slidingPanelContent.dart';
 import 'package:linto_flutter_client/gui/weather.dart';
 import 'package:linto_flutter_client/logic/maincontroller.dart';
@@ -32,6 +33,7 @@ class _MainInterface extends State<MainInterface> implements VoiceUIController{
     _mainController = widget.mainController;
     _mainController.currentUI = this;
     _mainController.initializeAudio();
+
 
   }
   @override
@@ -75,6 +77,8 @@ class _MainInterface extends State<MainInterface> implements VoiceUIController{
                      Expanded(
                        child: ControlBar(
                          onLintoClicked: () => onLinToClicked(),
+                         onMicrophoneClicked: (value) => {},
+                         onSettingClicked: () => Navigator.push(context, MaterialPageRoute(builder: (context) => OptionInterface(mainController: _mainController,))),
                        ),
                        flex: orientation == Orientation.portrait ? 5 : 6,
                      )
@@ -91,6 +95,10 @@ class _MainInterface extends State<MainInterface> implements VoiceUIController{
        ),
      ),
    );
+  }
+
+  void showSettings() {
+
   }
 
   void expandPanel(){

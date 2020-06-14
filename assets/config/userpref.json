@@ -1,0 +1,11 @@
+{
+  "client": {
+    "last_login" : "test",
+    "last_server" : "http://10.31.5.31:5000"
+  },
+  "system": {
+    "notificationVolume" : 1.0,
+    "speechVolume" : 1.0,
+    "language" : "fr-FR"
+  }
+}

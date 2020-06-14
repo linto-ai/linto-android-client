@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:linto_flutter_client/logic/options.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:linto_flutter_client/client/client.dart';
 import 'package:linto_flutter_client/audio/audiomanager.dart';
@@ -15,6 +16,7 @@ class MainController {
   final Audio _audioPlayer = Audio(); // Audio output
   final TTS _tts = TTS(); // Text to speech
   VoiceUIController currentUI; // UI interface
+  Options options = Options();
 
   TransactionState state = TransactionState.INITIALIZING;
 
@@ -44,6 +46,7 @@ class MainController {
       _tts.initTts();
       state = TransactionState.IDLE;
       client.onMQTTMsg = _onMessage;
+      options.loadUserPref();
     }
   }
 

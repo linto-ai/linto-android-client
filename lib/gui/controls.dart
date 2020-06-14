@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:linto_flutter_client/gui/mainInterface.dart';
+import 'package:linto_flutter_client/logic/customtypes.dart';
 
 class ControlBar extends StatefulWidget {
-  final LintoCallback onLintoClicked;
-  ControlBar({Key key, this.onLintoClicked}) : super(key: key);
+  final VoidCallback onLintoClicked;
+  final VoidCallback onSettingClicked;
+  final BoolCallBack onMicrophoneClicked;
+  ControlBar({Key key, this.onLintoClicked, this.onSettingClicked, this.onMicrophoneClicked}) : super(key: key);
 
   @override
   _ControlBar createState() => new _ControlBar();
@@ -34,6 +36,7 @@ class _ControlBar extends State<ControlBar> {
                 setState(() {
                   _micStatus = !_micStatus;
                 });
+                this.widget.onMicrophoneClicked(_micStatus);
               },
               splashColor: Colors.transparent,
               highlightColor: Colors.transparent,
@@ -52,6 +55,7 @@ class _ControlBar extends State<ControlBar> {
           Expanded(
             child: FlatButton(
               child: Image.asset('assets/icons/settings.png', fit: BoxFit.contain, height: 50,),
+              onPressed: () => this.widget.onSettingClicked(),
             ),
             flex: 2,
           ),
@@ -60,5 +64,3 @@ class _ControlBar extends State<ControlBar> {
     );
   }
 }
-
-typedef LintoCallback = void Function();
