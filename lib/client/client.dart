@@ -14,10 +14,28 @@ class LinTOClient {
   String _password;
   String _mqttHost;
   String _mqttPort;
+  String _subscribingTopic;
+  String _publishingTopic;
 
   bool _authentificated = false;
 
   MQTTClientWrapper mqttClient;
+
+  String get login {
+    return _login;
+  }
+
+  String get server {
+    return _authServURI;
+  }
+
+  String get currentScope {
+    return _selectedScope;
+  }
+
+  bool get isConnected {
+    return _authentificated;
+  }
 
   set onMQTTMsg(MsgCallback cb) {
     mqttClient.onMessage = cb;
@@ -67,8 +85,6 @@ class LinTOClient {
         _token = res['token'];
         _mqttHost = res['host'];
         _mqttPort = res['port'];
-
-        _authentificated = true;
         return true;
       }
       break;
@@ -135,7 +151,8 @@ class LinTOClient {
   Future<bool> setScope(String scope) async{
     _selectedScope = scope;
     await connectToBroker();
-    return mqttClient.connectionState == MQTTCurrentConnectionState.CONNECTED;
+    _authentificated =  mqttClient.connectionState == MQTTCurrentConnectionState.CONNECTED;
+    return _authentificated;
   }
 
   void connectToBroker() async {
@@ -145,7 +162,6 @@ class LinTOClient {
   }
 
   void sendMessage(Map<String, dynamic> message) {
-    print(message);
     mqttClient.publish(message);
   }
 }

@@ -7,8 +7,9 @@ class Options {
   double speechVolume;
   String language;
 
-  Future updateUserPref() async {
-
+  Future updateUserPref(double notif, double speech){
+    notificationvolume = notif;
+    speechVolume = speech;
   }
 
   Future loadUserPref() async {

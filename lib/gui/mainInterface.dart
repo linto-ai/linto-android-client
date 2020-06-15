@@ -97,10 +97,6 @@ class _MainInterface extends State<MainInterface> implements VoiceUIController{
    );
   }
 
-  void showSettings() {
-
-  }
-
   void expandPanel(){
   _controller.open();
   }

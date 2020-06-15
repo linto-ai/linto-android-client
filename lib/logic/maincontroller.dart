@@ -25,6 +25,10 @@ class MainController {
                                            'CANCELED' : 'sounds/canceled.wav'
   };
 
+  Future disconnect() async {
+
+  }
+
   Future<bool> requestPermissions() async {
     if (! await Permission.microphone.status.isGranted) {
       if( ! await Permission.microphone.request().isGranted) {
@@ -51,8 +55,9 @@ class MainController {
   }
 
   void _onMessage(String msg) {
-    print("MESSAGE RECEIVED");
-    var decodedmsg = jsonDecode(msg);
+
+    var decodedmsg = jsonDecode(utf8.decode(msg.runes.toList()));
+    print(decodedmsg);
     if (decodedmsg.keys.contains('say')) {
       _tts.speak(decodedmsg['say']);
     }
