@@ -48,6 +48,8 @@ class MainController {
       audioManager.onReady = _onAudioReady;
       audioManager.initialize();
       _tts.initTts();
+      _tts.startCallback = currentUI.onLintoSpeakingStart;
+      _tts.stopCallback = currentUI.onLintoSpeakingStop;
       state = TransactionState.IDLE;
       client.onMQTTMsg = _onMessage;
       options.loadUserPref();
@@ -55,11 +57,11 @@ class MainController {
   }
 
   void _onMessage(String msg) {
-
-    var decodedmsg = jsonDecode(utf8.decode(msg.runes.toList()));
-    print(decodedmsg);
-    if (decodedmsg.keys.contains('say')) {
-      _tts.speak(decodedmsg['say']);
+    var decodedMsg = jsonDecode(utf8.decode(msg.runes.toList()));
+    print(decodedMsg);
+    if (decodedMsg.keys.contains('say')) {
+      _tts.speak(decodedMsg['say']);
+      currentUI.onMessage(decodedMsg['say']);
     }
   }
 

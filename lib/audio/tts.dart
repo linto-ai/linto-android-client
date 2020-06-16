@@ -42,6 +42,8 @@ class TTS {
   initTts() {
     flutterTts = FlutterTts();
     flutterTts.setLanguage("fr-FR");
+    flutterTts.setStartHandler(_startCallback);
+    flutterTts.setCompletionHandler(_stopCallback);
   }
 
 
@@ -56,7 +58,9 @@ class TTS {
     await flutterTts.setPitch(pitch);
 
     var result = await flutterTts.speak(text);
-    if (result == 1) ttsState = TtsState.playing;
+    if (result == 1) {
+      ttsState = TtsState.playing;
+    }
   }
 
   Future _stop() async {

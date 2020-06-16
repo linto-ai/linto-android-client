@@ -27,11 +27,15 @@ class VoiceUIController{
     print('Request pending');
   }
 
-  void onLintoSpeakingStart(String text) {
-    print('Linto says $text');
+  void onLintoSpeakingStart() {
+    print('Linto start speaking ');
   }
 
   void onLintoSpeakingStop() {
     print('Linto stop speaking');
+  }
+
+  void onMessage(String msg) {
+    print('Received message : $msg');
   }
 }

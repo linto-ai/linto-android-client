@@ -25,6 +25,7 @@ class MainInterface extends StatefulWidget {
 class _MainInterface extends State<MainInterface> implements VoiceUIController{
   MainController _mainController;
   bool isActiveView = true;
+  SlidingPanel panel = SlidingPanel();
 
   PanelController _controller = PanelController();
   @override
@@ -46,7 +47,7 @@ class _MainInterface extends State<MainInterface> implements VoiceUIController{
            child: Center(
              child: SlidingUpPanel(
                panel: Center(
-                   child : SlidingPanel()
+                   child : panel
                ),
                onPanelClosed: () => onPanelClosed(),
                body: Container(
@@ -127,18 +128,18 @@ class _MainInterface extends State<MainInterface> implements VoiceUIController{
   }
 
   @override
-  void onLintoSpeakingStart(String text) {
-    // TODO: implement onLintoSpeakingStart
+  void onLintoSpeakingStart() {
+    panel.startSpeaking();
   }
 
   @override
   void onLintoSpeakingStop() {
-    // TODO: implement onLintoSpeakingStop
+    panel.stopSpeaking();
   }
 
   @override
   void onRequestPending() {
-    // TODO: implement onRequestPending
+    panel.loading();
   }
 
   @override
@@ -153,6 +154,12 @@ class _MainInterface extends State<MainInterface> implements VoiceUIController{
 
   @override
   void onUtteranceStart() {
-    // TODO: implement onUtteranceStart
+    panel.loading();
+  }
+
+  @override
+  void onMessage(String msg) {
+    expandPanel();
+    panel.displayMsg(msg);
   }
 }

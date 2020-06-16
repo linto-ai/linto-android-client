@@ -55,61 +55,68 @@ class _OptionInterface extends State<OptionInterface> {
                           ),
                         ),
                         Container(
-                          child: Flex(
-                            mainAxisAlignment: MainAxisAlignment.start,
-                            direction: orientation == Orientation.portrait ? Axis.vertical : Axis.horizontal,
-                            children: <Widget>[
-                              Text('Notification'.padRight(15, ' '), textAlign: TextAlign.left,),
-                              Expanded(
-                                child: Slider(value: _notif,
-                                  min: 0.0, max: 100.0,
-                                  label: _notif.toString(),
-                                  onChanged: (value) {setState(() {
-                                    _notif = value;
-                                  });},
-                                )
-                              ),
-                            ],
-                          ),
-                        ),
-                        Container(
-                          child: Flex(
-                            mainAxisAlignment: MainAxisAlignment.start,
-                            direction: orientation == Orientation.portrait ? Axis.vertical : Axis.horizontal,
-                            children: <Widget>[
-                              Text('Speech'.padRight(17, ' '), textAlign: TextAlign.left, ),
-                              Expanded(
-                                child: Slider(value: _speech,
+                          child: Expanded(
+                            child: Flex(
+                              mainAxisAlignment: MainAxisAlignment.start,
+                              direction: orientation == Orientation.portrait ? Axis.vertical : Axis.horizontal,
+                              children: <Widget>[
+                                Text('Notification'.padRight(15, ' '), textAlign: TextAlign.left,),
+                                Expanded(
+                                  child: Slider(value: _notif,
                                     min: 0.0, max: 100.0,
-                                    label: _speech.toString(),
+                                    label: _notif.toString(),
                                     onChanged: (value) {setState(() {
-                                      _speech = value;
-                                    });
-                                }),
-                              ),
-                            ],
-                          ),
+                                      _notif = value;
+                                    });},
+                                  ),
+                                  flex: 1,
+                                ),
+                              ],
+                            ),
+                          )
                         ),
                         Container(
-                          child: Flex(
-                            mainAxisAlignment: MainAxisAlignment.start,
-                            direction: orientation == Orientation.portrait ? Axis.vertical : Axis.horizontal,
-                            children: <Widget>[
-                              Text('Language'.padRight(15, ' '), textAlign: TextAlign.left, ),
-                              Expanded(
-                                child: DropdownButton<String>(
-                                  value: 'fr-FR',
-                                  items: <String>['fr-FR',].map((String value) {
-                                    return new DropdownMenuItem(
-                                        value: value,
-                                        child: new Text(value)
-                                    );
-                                  }).toList(),
-                                  onChanged: (_) {},
-                                )
-                              ),
-                            ],
-                          ),
+                          child: Expanded(
+                            child: Flex(
+                              mainAxisAlignment: MainAxisAlignment.start,
+                              direction: orientation == Orientation.portrait ? Axis.vertical : Axis.horizontal,
+                              children: <Widget>[
+                                Text('Speech'.padRight(17, ' '), textAlign: TextAlign.left, ),
+                                Expanded(
+                                  child: Slider(value: _speech,
+                                      min: 0.0, max: 100.0,
+                                      label: _speech.toString(),
+                                      onChanged: (value) {setState(() {
+                                        _speech = value;
+                                      });
+                                      }),
+                                ),
+                              ],
+                            ),
+                          )
+                        ),
+                        Container(
+                          child: Expanded(
+                            child: Flex(
+                              mainAxisAlignment: MainAxisAlignment.start,
+                              direction: orientation == Orientation.portrait ? Axis.vertical : Axis.horizontal,
+                              children: <Widget>[
+                                Text('Language'.padRight(15, ' '), textAlign: TextAlign.left, ),
+                                Expanded(
+                                    child: DropdownButton<String>(
+                                      value: 'fr-FR',
+                                      items: <String>['fr-FR',].map((String value) {
+                                        return new DropdownMenuItem(
+                                            value: value,
+                                            child: new Text(value)
+                                        );
+                                      }).toList(),
+                                      onChanged: (_) {},
+                                    )
+                                ),
+                              ],
+                            ),
+                          )
                         ),
                         sysInfo(_mainController),
                         Container(
