@@ -1,7 +1,7 @@
 {
   "client": {
-    "last_login" : "linto",
-    "last_server" : "http://192.168.0.16:5000"
+    "last_login" : "admin@linto.ai",
+    "last_server" : "http://10.31.3.190:3000"
   },
   "audio": {
     "samplingRate": 16000,

@@ -144,6 +144,7 @@ class LoginScreenForm extends State<LoginScreen> {
   void onLoginPressed(BuildContext scaffoldContext) async {
     if (! await _mainController.requestPermissions()) {
       displaySnackMessage(scaffoldContext, "Permissions missing");
+      return;
     }
     SystemChannels.textInput.invokeMethod('TextInput.hide');
     if (! _formKey.currentState.validate()) {
@@ -153,7 +154,7 @@ class LoginScreenForm extends State<LoginScreen> {
 
     // 1- Request authentification token
     try {
-      await _mainController.client.requestAuthentification(_login.value.text, _password.value.text, _server.value.text);
+      await _mainController.client.requestAuthentification(_login.value.text, _password.value.text,);
     } on ClientErrorException catch(error) {
       displaySnackMessage(scaffoldContext, error.error.toString(), isError: true);
       return;
@@ -169,7 +170,7 @@ class LoginScreenForm extends State<LoginScreen> {
     print(scopes);
 
     // 3 Select scope
-    var selectedScope = await showScopeDialog(scaffoldContext, scopes);
+    var selectedScope = await showScopeDialog(scaffoldContext, "Select application", scopes);
 
     // 4- Establish connexion to broker
     var success = await _mainController.client.setScope(selectedScope);

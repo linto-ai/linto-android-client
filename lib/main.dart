@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:linto_flutter_client/gui/home.dart';
 import 'package:linto_flutter_client/logic/maincontroller.dart';
 import 'package:linto_flutter_client/gui/loginscreen.dart';
 
@@ -14,7 +15,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
 
     return MaterialApp(
-      home: LoginScreen(mainController: mainController,)
+      home: Home(mainController: mainController,)
     );
   }
 }
