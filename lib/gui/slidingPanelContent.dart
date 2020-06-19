@@ -71,7 +71,7 @@ class _SlidingPanel extends State<SlidingPanel> {
                 width: windowWidth * 0.25,
                 height: windowWidth * 0.25) :
                   AutoSizeText(_displayedText,
-                    style: TextStyle(fontSize: 50), maxLines: 4,),
+                    style: TextStyle(fontSize: 40), maxLines: 4,),
           )
         ],
       ),

@@ -14,6 +14,9 @@ class LinTOClient {
   final String APISCOPES = "/scopes";
   final String APIPREFIX = "/overwatch";
 
+  final String MQTTINGRESS = '/tolinto';
+  final String MQTTEGRESS = '/fromlinto';
+
   String _token;
   String _refreshToken;
   // TODO expiring time
@@ -53,10 +56,9 @@ class LinTOClient {
     return _authentificated;
   }
 
-  set onMQTTMsg(MsgCallback cb) {
+  set onMQTTMsg(MQTTMessageCallback cb) {
     mqttClient.onMessage = cb;
   }
-
 
   /// Retrieve last used login from config file
   Future<String> getLastUser() async {
@@ -141,12 +143,13 @@ class LinTOClient {
       throw ClientErrorException('0x0010');
     }
     print('Response status: ${response.statusCode}');
+    print('Response body: ${response.body}');
     switch(response.statusCode) {
 
       case 202: {
         try {
           print('Response status: ${response.statusCode}');
-          print('Response body: ${response.body}');
+
           var res = json.decode(response.body);
 
           var userInfo = res["user"];
@@ -188,8 +191,9 @@ class LinTOClient {
   }
 
   /// Request scopes from the server
+  /// Should return an array or {topic, name, description}
   /// Throws [ClientErrorException] if an error is encountered.
-  Future<Map<String, dynamic>> requestScopes() async {
+  Future<List<dynamic>> requestScopes() async {
     print("Requesting scopes from server ...");
     Map<String, String> requestHeaders = { 'Content-type': 'application/json', 'Accept': 'application/json', 'Authorization' : 'Token $_token'  };
     var response;
@@ -204,11 +208,12 @@ class LinTOClient {
       case 200: {
         print('Response status: ${response.statusCode}');
         print('Response body: ${response.body}');
-        Map<String, dynamic> res = json.decode(response.body);
-        if (! res.keys.contains('scopes')) {
+        try {
+          List<dynamic> res = json.decode(response.body);
+          return res;
+        } on Exception catch (_) {
           throw ClientErrorException('0x0007');
         }
-        return res['scopes'];
       }
       break;
 
@@ -232,18 +237,26 @@ class LinTOClient {
 
   Future<bool> setScope(String scope) async{
     _selectedScope = scope;
+    _publishingTopic = "$scope$MQTTEGRESS/$_sessionID";
+    _subscribingTopic = "$scope$MQTTINGRESS/$_sessionID";
+
     await connectToBroker();
     _authentificated =  mqttClient.connectionState == MQTTCurrentConnectionState.CONNECTED;
+
     return _authentificated;
   }
 
   void connectToBroker() async {
-    String topic = "$_selectedScope/tolinto/$_login";
     mqttClient = MQTTClientWrapper((msg) => print("Error : $msg"), (msg) => print("Message ! $msg"));
-    await mqttClient.setupClient(_mqttHost, _mqttPort, _login, topic);
+    await mqttClient.setupClient(_mqttHost, _mqttPort, _sessionID, _subscribingTopic, login : _mqttLogin , password: _mqttPassword, usesLogin: _mqttUseLogin);
   }
 
   void sendMessage(Map<String, dynamic> message) {
-    mqttClient.publish(message);
+    mqttClient.publish(_publishingTopic, message );
+  }
+
+  void disconnect() {
+    _authentificated = false;
   }
 }
+

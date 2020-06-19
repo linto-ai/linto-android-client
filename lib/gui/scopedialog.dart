@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-Future<String> showScopeDialog(BuildContext context, String title, List<Map<String, String>> options) async {
+Future<String> showScopeDialog(BuildContext context, String title, List<dynamic> options) async {
 
   var scopeKey = await showDialog<String>(
       context: context,
@@ -14,9 +14,9 @@ Future<String> showScopeDialog(BuildContext context, String title, List<Map<Stri
   return scopeKey;
 }
 
-List<SimpleDialogOption> listOptions(BuildContext context, List<Map<String, String>> options) {
+List<SimpleDialogOption> listOptions(BuildContext context, List<dynamic> options) {
   List<SimpleDialogOption> dialogOptions = List<SimpleDialogOption>();
-  for (Map<String, String> entry in options) {
+  for (Map<String, dynamic> entry in options) {
     dialogOptions.add( SimpleDialogOption(
       child: Text(entry['name']),
       onPressed: () {

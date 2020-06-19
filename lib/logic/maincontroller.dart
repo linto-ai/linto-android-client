@@ -8,6 +8,7 @@ import 'package:linto_flutter_client/audio/audioPlayer.dart';
 import 'package:linto_flutter_client/logic/uicontroller.dart';
 import 'package:linto_flutter_client/audio/utils/wav.dart';
 import 'package:linto_flutter_client/audio/tts.dart';
+import 'package:linto_flutter_client/logic/transactions.dart';
 
 
 class MainController {
@@ -18,7 +19,8 @@ class MainController {
   VoiceUIController currentUI; // UI interface
   Options options = Options();
 
-  TransactionState state = TransactionState.INITIALIZING;
+  ClientState state = ClientState.INITIALIZING;
+  Transaction _currentTransaction = Transaction("");
 
   final Map<String, String> audioAssets = {'START' : 'sounds/detection.wav',
                                            'STOP': 'sounds/detectEnd.wav',
@@ -50,19 +52,25 @@ class MainController {
       _tts.initTts();
       _tts.startCallback = currentUI.onLintoSpeakingStart;
       _tts.stopCallback = currentUI.onLintoSpeakingStop;
-      state = TransactionState.IDLE;
+      state = ClientState.IDLE;
       client.onMQTTMsg = _onMessage;
       options.loadUserPref();
     }
   }
 
-  void _onMessage(String msg) {
+  void _onMessage(String topic, String msg) {
     var decodedMsg = jsonDecode(utf8.decode(msg.runes.toList()));
-    print(decodedMsg);
-    if (decodedMsg.keys.contains('say')) {
-      _tts.speak(decodedMsg['say']);
-      currentUI.onMessage(decodedMsg['say']);
+    String targetTopic = topic.split('/').last;
+    if (targetTopic == 'say') {
+      say(decodedMsg['value']);
+      currentUI.onMessage('"${decodedMsg['value']}"');
     }
+  }
+
+  void say(String value){
+    //shutdown detection
+    _tts.speak(value);
+    //resolve
   }
 
   void triggerKeyWord() {
@@ -70,10 +78,10 @@ class MainController {
   }
 
   void abord() {
-    if (state == TransactionState.LISTENNING) {
+    if (state == ClientState.LISTENNING) {
       audioManager.cancelUtterance();
     }
-    state = TransactionState.IDLE;
+    state = ClientState.IDLE;
     if (! audioManager.isDetecting) {
       audioManager.startDetecting();
     }
@@ -85,14 +93,14 @@ class MainController {
     audioManager.onUtteranceEnd = _onUtteranceEnd;
     audioManager.onCanceled = _onUtteranceCanceled;
     audioManager.startDetecting();
-    state = TransactionState.IDLE;
+    state = ClientState.IDLE;
   }
 
   void _onKeywordSpotted() {
     currentUI.onKeywordSpotted();
     _audioPlayer.playAsset(audioAssets['START']);
     audioManager.detectUtterance();
-    state = TransactionState.LISTENNING;
+    state = ClientState.LISTENNING;
   }
 
   void _onUtteranceStart() {
@@ -104,19 +112,19 @@ class MainController {
     currentUI.onUtteranceEnd();
     _audioPlayer.playAsset(audioAssets['STOP']);
     client.sendMessage({'audio': rawSig2Wav(signal, 16000, 1, 16)});
-    state = TransactionState.REQUESTPENDING;
+    state = ClientState.REQUESTPENDING;
     currentUI.onRequestPending();
   }
 
   void _onUtteranceCanceled() {
     currentUI.onUtteranceCanceled();
     _audioPlayer.playAsset(audioAssets['CANCELED']);
-    state = TransactionState.IDLE;
+    state = ClientState.IDLE;
     audioManager.startDetecting();
   }
 }
 
-enum TransactionState {
+enum ClientState {
   INITIALIZING,
   IDLE,
   LISTENNING,

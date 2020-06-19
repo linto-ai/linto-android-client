@@ -22,9 +22,9 @@ class MQTTClientWrapper {
   MQTTSubscriptionState subscriptionState = MQTTSubscriptionState.IDLE;
 
   MsgCallback _onError;
-  MsgCallback _onMessage = (message) => print(message);
+  MQTTMessageCallback _onMessage = (topic, msg) => print("$topic : $msg");
 
-  set onMessage(MsgCallback cb) {
+  set onMessage(MQTTMessageCallback cb) {
     _onMessage = cb;
   }
 
@@ -36,24 +36,38 @@ class MQTTClientWrapper {
     _onError = onError;
   }
 
-  void setupClient(String serverURI, String serverPort, String deviceName, String topic,) async {
-      client = MqttServerClient.withPort(serverURI, deviceName, int.parse(serverPort));
-      client.logging(on: false);
-      client.keepAlivePeriod = 20;
+  void setupClient(String serverURI, String serverPort, String name,  String topic,{bool usesLogin: false, String login : "", String password : ""}) async {
+      client = MqttServerClient.withPort(serverURI, name, int.parse(serverPort));
+      //client.logging(on: usesLogin);
       client.onDisconnected = _onDisconnect;
-      client.onConnected = _onConnect;
+      client.onConnected = () => _onConnect("$topic/status");
       client.onSubscribed = _onSubscribe;
-      await _connectClient();
+      //client.logging(on: true);
+      final connMess = MqttConnectMessage()
+        .withClientIdentifier(name)
+        .keepAliveFor(3600)
+        .withWillTopic("$topic/status")
+        .withWillMessage(jsonEncode({"connexion" : "offline"}))
+        .startClean()
+        .withWillRetain()
+        .withWillQos(MqttQos.atLeastOnce);
+
+      if (usesLogin) {
+        connMess.authenticateAs(login, password);
+      }
+      client.connectionMessage = connMess;
+
+      await _connectClient("$topic/status");
       if(connectionState == MQTTCurrentConnectionState.CONNECTED) {
-        _subscribeToTopic(topic);
+        _subscribeToTopic("$topic/#");
       }
   }
 
-  Future<void> _connectClient() async {
+  Future<void> _connectClient(String statusTopic) async {
       try {
           print('MQTTClientWrapper::Mosquitto client connecting....');
           connectionState = MQTTCurrentConnectionState.CONNECTING;
-          await client.connect(); // connect(login, password);
+          await client.connect();
       } on Exception catch (e) {
           print('MQTTClientWrapper::client exception - $e');
           connectionState = MQTTCurrentConnectionState.ERROR_WHEN_CONNECTING;
@@ -61,6 +75,7 @@ class MQTTClientWrapper {
       }
       if (client.connectionStatus.state == MqttConnectionState.connected) {
           connectionState = MQTTCurrentConnectionState.CONNECTED;
+          publish(statusTopic, {"connexion" : "online"}, retain: true);
           print('MQTTClientWrapper::Mosquitto client connected');
       } else {
         print('MQTTClientWrapper::ERROR Mosquitto client connection failed - disconnecting, status is ${client.connectionStatus}');
@@ -76,8 +91,9 @@ class MQTTClientWrapper {
       final MqttPublishMessage recMess = c[0].payload;
       final String payload =
       MqttPublishPayload.bytesToStringAsString(recMess.payload.message);
+      final String topic = recMess.variableHeader.topicName;
       print("MQTTClientWrapper::GOT A NEW MESSAGE $payload");
-      _onMessage(payload);
+      _onMessage(topic, payload);
     });
 
   }
@@ -90,10 +106,9 @@ class MQTTClientWrapper {
     connectionState = MQTTCurrentConnectionState.DISCONNECTED;
   }
 
-  void _onConnect() {
+  void _onConnect(String topic) {
     connectionState = MQTTCurrentConnectionState.CONNECTED;
-    print(
-        'MQTTClientWrapper::OnConnected client callback - Client connection was sucessful');
+    print('MQTTClientWrapper::OnConnected client callback - Client connection was sucessful');
   }
 
   void _onSubscribe(String topic) {
@@ -101,10 +116,10 @@ class MQTTClientWrapper {
     subscriptionState = MQTTSubscriptionState.SUBSCRIBED;
   }
 
-  void publish(Map<String, dynamic> payload) {
+  void publish(String topic, Map<String, dynamic> payload, {bool retain: false,}) {
     var payload_formated = jsonEncode(payload);
     MqttClientPayloadBuilder builder = MqttClientPayloadBuilder();
     builder.addString(payload_formated);
-    client.publishMessage('fromlinto/test', MqttQos.exactlyOnce, builder.payload);
+    client.publishMessage(topic, MqttQos.exactlyOnce, builder.payload, retain: retain);
   }
 }

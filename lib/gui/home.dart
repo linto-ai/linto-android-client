@@ -5,6 +5,7 @@ import 'package:linto_flutter_client/gui/scopedialog.dart';
 import 'package:linto_flutter_client/gui/utils/flaredisplay.dart';
 import 'package:linto_flutter_client/logic/customtypes.dart';
 import 'package:linto_flutter_client/logic/maincontroller.dart';
+import 'package:linto_flutter_client/gui/mainInterface.dart';
 
 
 enum AuthenticationStep {
@@ -158,7 +159,7 @@ class _Home extends State<Home> {
       case AuthenticationStep.ROUTE_SELECTED : {
         final _formKey = GlobalKey<FormState>();
         final _login = TextEditingController(text: _lastUser);
-        final _password = TextEditingController(text: "password");
+        final _password = TextEditingController(text: "YOUR PASSWORD");
 
         final FocusNode _loginFocus = FocusNode();
         final FocusNode _passwordFocus = FocusNode();
@@ -211,9 +212,7 @@ class _Home extends State<Home> {
                             if (! term.isEmpty) {
                               authenticate(context, _login.value.text, _password.value.text);
                             }
-
                           },
-
                         ),
                         FlatButton(
                           child: Text('LOGIN'),
@@ -293,6 +292,7 @@ class _Home extends State<Home> {
       displaySnackMessage(scaffoldContext, 'Could not connect to broker', isError: true);
       return;
     }
+    Navigator.push(context, MaterialPageRoute(builder: (context) => MainInterface(mainController: _mainController,)));
   }
 
   void displaySnackMessage(BuildContext context, String message, {bool isError: false}) async {

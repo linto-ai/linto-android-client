@@ -78,7 +78,8 @@ class _OptionInterface extends State<OptionInterface> {
                         Container(
                           child: Expanded(
                             child: Flex(
-                              mainAxisAlignment: MainAxisAlignment.start,
+
+                              mainAxisAlignment: MainAxisAlignment.spaceAround,
                               direction: orientation == Orientation.portrait ? Axis.vertical : Axis.horizontal,
                               children: <Widget>[
                                 Text('Speech'.padRight(17, ' '), textAlign: TextAlign.left, ),
@@ -117,6 +118,29 @@ class _OptionInterface extends State<OptionInterface> {
                               ],
                             ),
                           )
+                        ),
+                        Container(
+                            child: Expanded(
+                              child: Flex(
+                                mainAxisAlignment: MainAxisAlignment.start,
+                                direction: orientation == Orientation.portrait ? Axis.vertical : Axis.horizontal,
+                                children: <Widget>[
+                                  Text('Application'.padRight(15, ' '), textAlign: TextAlign.left, ),
+                                  Expanded(
+                                      child: DropdownButton<String>(
+                                        value: 'default',
+                                        items: <String>['default', 'personnel'].map((String value) {
+                                          return new DropdownMenuItem(
+                                              value: value,
+                                              child: new Text(value)
+                                          );
+                                        }).toList(),
+                                        onChanged: (_) {},
+                                      )
+                                  ),
+                                ],
+                              ),
+                            )
                         ),
                         sysInfo(_mainController),
                         Container(
