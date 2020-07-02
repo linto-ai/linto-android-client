@@ -5,7 +5,14 @@ import 'package:flutter/services.dart' show rootBundle;
 import 'package:http/http.dart' as http;
 import 'package:linto_flutter_client/client/mqttClientWrapper.dart';
 import 'package:linto_flutter_client/logic/customtypes.dart';
-import 'package:linto_flutter_client/client/apiroutes.dart';
+
+enum AuthenticationStep{
+  FIRSTLAUNCH,
+  NOTCONNECTED,
+  SERVERSELECTED,
+  AUTHENTICATED,
+  CONNECTED
+}
 
 class LinTOClient {
 
@@ -54,6 +61,10 @@ class LinTOClient {
 
   bool get isConnected {
     return _authentificated;
+  }
+
+  Map<String, dynamic> get authRoute {
+    return _authRoute;
   }
 
   set onMQTTMsg(MQTTMessageCallback cb) {
@@ -246,17 +257,63 @@ class LinTOClient {
     return _authentificated;
   }
 
+  Future<AuthenticationStep> reconnect(String server, String login, String password, Map<String, dynamic> route, String scope) async {
+    disconnect();
+    AuthenticationStep step = AuthenticationStep.NOTCONNECTED;
+    List<dynamic> routes = await requestRoutes(server);
+    try {
+      routes = await requestRoutes(server);
+    } on ClientErrorException catch(error) {
+      return step;
+    }
+
+    if (routes.map((e) => e['basePath']).contains(route['basePath'])){
+      setAuthRoute(route);
+      step = AuthenticationStep.SERVERSELECTED;
+    } else {
+      return step;
+    }
+
+    try {
+      await requestAuthentification(login, password);
+    } on ClientErrorException catch(error) {
+      return step;
+    }
+
+    step = AuthenticationStep.AUTHENTICATED;
+
+    var scopes;
+    try {
+      scopes = await requestScopes();
+    } on ClientErrorException catch(error) {
+      return step;
+    }
+
+    if ( ! scopes.map((e) => e['topic']).contains(scope)){
+      return step;
+    }
+
+    var success = await setScope(scope);
+    if (!success) {
+      return step;
+    }
+    return AuthenticationStep.CONNECTED;
+  }
+
   void connectToBroker() async {
     mqttClient = MQTTClientWrapper((msg) => print("Error : $msg"), (msg) => print("Message ! $msg"));
     await mqttClient.setupClient(_mqttHost, _mqttPort, _sessionID, _subscribingTopic, login : _mqttLogin , password: _mqttPassword, usesLogin: _mqttUseLogin);
   }
 
-  void sendMessage(Map<String, dynamic> message) {
+  void sendMessage(Map<String, dynamic> message, {String subTopic : ""}) {
     mqttClient.publish(_publishingTopic, message );
   }
 
   void disconnect() {
-    _authentificated = false;
+    if (_authentificated) {
+      _authentificated = false;
+      mqttClient.disconnect();
+    }
   }
 }
 

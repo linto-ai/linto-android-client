@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 
-Future<String> showScopeDialog(BuildContext context, String title, List<dynamic> options) async {
 
+/// Scope selection dialog
+Future<String> showScopeDialog(BuildContext context, String title, List<dynamic> options) async {
   var scopeKey = await showDialog<String>(
       context: context,
       builder: (BuildContext context) {
@@ -14,6 +15,7 @@ Future<String> showScopeDialog(BuildContext context, String title, List<dynamic>
   return scopeKey;
 }
 
+/// Scope selection items
 List<SimpleDialogOption> listOptions(BuildContext context, List<dynamic> options) {
   List<SimpleDialogOption> dialogOptions = List<SimpleDialogOption>();
   for (Map<String, dynamic> entry in options) {
@@ -27,8 +29,8 @@ List<SimpleDialogOption> listOptions(BuildContext context, List<dynamic> options
   return dialogOptions;
 }
 
+/// Route selection dialog
 Future<Map<String, dynamic>> showRoutesDialog(BuildContext context, String title, List<dynamic> options) async {
-
   var scopeKey = await showDialog<Map<String, dynamic>>(
       context: context,
       builder: (BuildContext context) {
@@ -40,7 +42,7 @@ Future<Map<String, dynamic>> showRoutesDialog(BuildContext context, String title
   );
   return scopeKey;
 }
-
+/// Route selection options
 List<SimpleDialogOption> listRoutes(BuildContext context, List<dynamic> options) {
   List<SimpleDialogOption> dialogOptions = List<SimpleDialogOption>();
   for (Map<String, dynamic> entry in options) {
@@ -52,4 +54,29 @@ List<SimpleDialogOption> listRoutes(BuildContext context, List<dynamic> options)
     ));
   }
   return dialogOptions;
+}
+
+/// Simple yes/no dialog
+
+Future<bool> confirmDialog(BuildContext context, String title, {String description : ""}) async {
+  return await showDialog<bool>(
+    context: context,
+    builder: (BuildContext context) {
+      return SimpleDialog(
+        title: Text(title),
+        children: <Widget>[
+          Text(description),
+          SimpleDialogOption(
+            child: Text("Disconnect"),
+            onPressed: () => Navigator.pop(context, true),
+          ),
+          SimpleDialogOption(
+            child: Text("Cancel"),
+            onPressed: () => Navigator.pop(context, false),
+          )
+        ],
+      );
+    }
+  );
+
 }

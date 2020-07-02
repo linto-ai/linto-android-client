@@ -1,7 +1,12 @@
 {
   "client": {
-    "last_login" : "test",
-    "last_server" : "http://10.31.5.31:5000"
+    "first_login" : true,
+    "keep_info" : false,
+    "last_server" : "https://stage.linto.ai",
+    "last_route" : "",
+    "last_login" : "",
+    "last_password" : "",
+    "last_scope" : ""
   },
   "system": {
     "notificationVolume" : 1.0,

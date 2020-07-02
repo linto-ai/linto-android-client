@@ -5,7 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:linto_flutter_client/gui/calendar.dart';
 import 'package:linto_flutter_client/gui/clock.dart';
 import 'package:linto_flutter_client/gui/meeting.dart';
-import 'package:linto_flutter_client/gui/optionsUI.dart';
+import 'package:linto_flutter_client/gui/settings.dart';
 import 'package:linto_flutter_client/gui/slidingPanelContent.dart';
 import 'package:linto_flutter_client/gui/weather.dart';
 import 'package:linto_flutter_client/logic/maincontroller.dart';
@@ -33,8 +33,7 @@ class _MainInterface extends State<MainInterface> implements VoiceUIController{
     super.initState();
     _mainController = widget.mainController;
     _mainController.currentUI = this;
-    _mainController.initializeAudio();
-
+    _mainController.init();
 
   }
   @override
@@ -79,7 +78,7 @@ class _MainInterface extends State<MainInterface> implements VoiceUIController{
                        child: ControlBar(
                          onLintoClicked: () => onLinToClicked(),
                          onMicrophoneClicked: (value) => {},
-                         onSettingClicked: () => Navigator.push(context, MaterialPageRoute(builder: (context) => OptionInterface(mainController: _mainController,))),
+                         onSettingClicked: () async => displaySettings(),
                        ),
                        flex: orientation == Orientation.portrait ? 5 : 6,
                      )
@@ -122,6 +121,13 @@ class _MainInterface extends State<MainInterface> implements VoiceUIController{
     Navigator.push(context, MaterialPageRoute(builder: (context) => MeetingInterface()));
   }
 
+  void displaySettings() async {
+    bool disconnected = await Navigator.push(context, MaterialPageRoute(builder: (context) => OptionInterface(mainController: _mainController,)));
+    if (disconnected) {
+      _mainController.disconnect();
+    }
+  }
+
   @override
   void onKeywordSpotted() {
     expandPanel();
@@ -161,5 +167,10 @@ class _MainInterface extends State<MainInterface> implements VoiceUIController{
   void onMessage(String msg) {
     expandPanel();
     panel.displayMsg(msg);
+  }
+
+  @override
+  void onDisconnect() {
+    Navigator.pop(context, false);
   }
 }

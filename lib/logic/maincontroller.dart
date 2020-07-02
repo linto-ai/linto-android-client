@@ -1,6 +1,6 @@
 import 'dart:convert';
 
-import 'package:linto_flutter_client/logic/options.dart';
+import 'package:linto_flutter_client/logic/userpref.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:linto_flutter_client/client/client.dart';
 import 'package:linto_flutter_client/audio/audiomanager.dart';
@@ -11,26 +11,37 @@ import 'package:linto_flutter_client/audio/tts.dart';
 import 'package:linto_flutter_client/logic/transactions.dart';
 
 
+/// MainController is the central controller of the app.
+/// It links the UI, client and modules.
 class MainController {
-  final LinTOClient client = LinTOClient(); // Network connectivity
-  final AudioManager audioManager = AudioManager(); // Audio input
-  final Audio _audioPlayer = Audio(); // Audio output
-  final TTS _tts = TTS(); // Text to speech
-  VoiceUIController currentUI; // UI interface
-  Options options = Options();
+  static final  Map<String, String> _audioAssets = {
+    'START' : 'sounds/detection.wav',
+    'STOP': 'sounds/detectEnd.wav',
+    'CANCELED' : 'sounds/canceled.wav'};
 
-  ClientState state = ClientState.INITIALIZING;
-  Transaction _currentTransaction = Transaction("");
+  final LinTOClient client = LinTOClient();           // Network connectivity
+  final AudioManager audioManager = AudioManager();   // Audio input
+  final Audio _audioPlayer = Audio();                 // Audio output
+  final TTS _tts = TTS();                             // Text to speech
+  VoiceUIController currentUI;                        // UI interface
+  UserPreferences userPreferences = UserPreferences();// Persistent user preferences
 
-  final Map<String, String> audioAssets = {'START' : 'sounds/detection.wav',
-                                           'STOP': 'sounds/detectEnd.wav',
-                                           'CANCELED' : 'sounds/canceled.wav'
-  };
+  ClientState state = ClientState.INITIALIZING;       // App State
 
-  Future disconnect() async {
+  Transaction _currentTransaction = Transaction("");  // Current transaction.
 
+  /// Stop client session
+  void disconnect() {
+    // Disconnect from broker
+    client.disconnect();
+    // Cut Audio
+    audioManager.stopDetecting();
+    // Set flags
+    state = ClientState.DISCONNECTED;
+    currentUI.onDisconnect();
   }
 
+  /// Request permission from device
   Future<bool> requestPermissions() async {
     if (! await Permission.microphone.status.isGranted) {
       if( ! await Permission.microphone.request().isGranted) {
@@ -45,19 +56,22 @@ class MainController {
     return true;
   }
 
-  void initializeAudio() {
-    if (! audioManager.isReady) {
+  void init() {
+    if (state == ClientState.INITIALIZING) {
       audioManager.onReady = _onAudioReady;
       audioManager.initialize();
       _tts.initTts();
       _tts.startCallback = currentUI.onLintoSpeakingStart;
       _tts.stopCallback = currentUI.onLintoSpeakingStop;
-      state = ClientState.IDLE;
       client.onMQTTMsg = _onMessage;
-      options.loadUserPref();
+      state = ClientState.IDLE;
+    } else if (state == ClientState.DISCONNECTED) {
+      audioManager.startDetecting();
+      state = ClientState.IDLE;
     }
   }
 
+  /// Called on MQTT message received.
   void _onMessage(String topic, String msg) {
     var decodedMsg = jsonDecode(utf8.decode(msg.runes.toList()));
     String targetTopic = topic.split('/').last;
@@ -67,18 +81,21 @@ class MainController {
     }
   }
 
+  /// Synthesize speech
   void say(String value){
     //shutdown detection
     _tts.speak(value);
     //resolve
   }
 
+  /// Simulate keyword spotted
   void triggerKeyWord() {
     audioManager.triggerKeyword();
   }
 
+  /// Cancel utterance detection
   void abord() {
-    if (state == ClientState.LISTENNING) {
+    if (state == ClientState.LISTENING) {
       audioManager.cancelUtterance();
     }
     state = ClientState.IDLE;
@@ -87,6 +104,7 @@ class MainController {
     }
   }
 
+  /// Bind audio input callbacks
   void _onAudioReady() {
     audioManager.onKeyWordSpotted = _onKeywordSpotted;
     audioManager.onUtteranceStart = _onUtteranceStart;
@@ -98,9 +116,9 @@ class MainController {
 
   void _onKeywordSpotted() {
     currentUI.onKeywordSpotted();
-    _audioPlayer.playAsset(audioAssets['START']);
+    _audioPlayer.playAsset(_audioAssets['START']);
     audioManager.detectUtterance();
-    state = ClientState.LISTENNING;
+    state = ClientState.LISTENING;
   }
 
   void _onUtteranceStart() {
@@ -110,7 +128,7 @@ class MainController {
 
   void _onUtteranceEnd(List<int> signal) {
     currentUI.onUtteranceEnd();
-    _audioPlayer.playAsset(audioAssets['STOP']);
+    _audioPlayer.playAsset(_audioAssets['STOP']);
     client.sendMessage({'audio': rawSig2Wav(signal, 16000, 1, 16)});
     state = ClientState.REQUESTPENDING;
     currentUI.onRequestPending();
@@ -118,7 +136,7 @@ class MainController {
 
   void _onUtteranceCanceled() {
     currentUI.onUtteranceCanceled();
-    _audioPlayer.playAsset(audioAssets['CANCELED']);
+    _audioPlayer.playAsset(_audioAssets['CANCELED']);
     state = ClientState.IDLE;
     audioManager.startDetecting();
   }
@@ -127,7 +145,8 @@ class MainController {
 enum ClientState {
   INITIALIZING,
   IDLE,
-  LISTENNING,
+  LISTENING,
   REQUESTPENDING,
   SPEAKING,
+  DISCONNECTED
 }

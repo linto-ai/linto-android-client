@@ -1,8 +1,8 @@
-import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:linto_flutter_client/gui/home.dart';
+import 'package:linto_flutter_client/gui/login.dart';
 import 'package:linto_flutter_client/logic/maincontroller.dart';
-import 'package:linto_flutter_client/gui/loginscreen.dart';
+
 
 void main() {
   runApp(MyApp());

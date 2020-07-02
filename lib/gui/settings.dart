@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:linto_flutter_client/logic/maincontroller.dart';
-import 'package:linto_flutter_client/logic/options.dart';
+import 'package:linto_flutter_client/logic/userpref.dart';
+import 'package:linto_flutter_client/gui/dialogs.dart' show confirmDialog;
 
 
 class OptionInterface extends StatefulWidget {
@@ -15,7 +16,7 @@ class OptionInterface extends StatefulWidget {
 
 class _OptionInterface extends State<OptionInterface> {
   MainController _mainController;
-  Options _options;
+  UserPreferences _userPref;
   double _notif;
   double _speech;
 
@@ -23,9 +24,9 @@ class _OptionInterface extends State<OptionInterface> {
   void initState() {
     super.initState();
     _mainController = widget.mainController;
-    _options = _mainController.options;
-    _notif = _options.notificationvolume * 100;
-    _speech = _options.speechVolume * 100;
+    _userPref = _mainController.userPreferences;
+    _notif = _userPref.systemPreferences["notificationVolume"] * 100;
+    _speech = _userPref.systemPreferences["speechVolume"]  * 100;
   }
 
   @override
@@ -154,7 +155,7 @@ class _OptionInterface extends State<OptionInterface> {
                                     Text("Disconnect")
                                   ],
                                 ),
-                                onPressed: () => {}, //TODO disconnect
+                                onPressed: () async => onDisconnect(context),
                               )
                             ],
                           ),
@@ -169,11 +170,24 @@ class _OptionInterface extends State<OptionInterface> {
         )
     );
   }
+
   Future onPop() async {
-    await _options.updateUserPref(_notif / 100.0, _speech / 100.0);
-    Navigator.pop(context);
+    _userPref.systemPreferences["notificationVolume"] = _notif / 100;
+    _userPref.systemPreferences["speechVolume"] = _speech / 100;
+    _userPref.updatePrefs();
+    Navigator.pop(context, false);
   }
-}
+
+  void onDisconnect(BuildContext context) async {
+    confirmDialog(context, "Disconnect ?").then((bool toDisconnect) {
+      if (toDisconnect) {
+        _userPref.clientPreferences["keep_info"] = false;
+        _userPref.updatePrefs();
+        Navigator.pop(context, true);
+      }
+    });
+  }
+  }
 
 Container sysInfo(MainController controller) {
   Map<String, String> entryKeys = {

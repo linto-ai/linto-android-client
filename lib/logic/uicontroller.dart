@@ -38,4 +38,8 @@ class VoiceUIController{
   void onMessage(String msg) {
     print('Received message : $msg');
   }
+
+  void onDisconnect() {
+    print('Disconnected');
+  }
 }

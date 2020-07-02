@@ -122,4 +122,8 @@ class MQTTClientWrapper {
     builder.addString(payload_formated);
     client.publishMessage(topic, MqttQos.exactlyOnce, builder.payload, retain: retain);
   }
+
+  void disconnect() {
+    client.disconnect();
+  }
 }
