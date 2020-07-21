@@ -50,6 +50,11 @@ class _MainInterface extends State<MainInterface> implements VoiceUIController{
                ),
                onPanelClosed: () => onPanelClosed(),
                body: Container(
+                 decoration: BoxDecoration(
+                   gradient: RadialGradient(
+                     colors: [Color.fromRGBO(255, 255, 255, 1), Color.fromRGBO(213, 231, 242, 1)]
+                   )
+                 ),
                  child: Column(
                    children: <Widget>[
                      Expanded(
@@ -59,7 +64,8 @@ class _MainInterface extends State<MainInterface> implements VoiceUIController{
                          child: Flex(
                            children: <Widget>[
                              Expanded(child: Clock()),
-                             Expanded(child: WeatherWidget()),
+                             Expanded(child:WeatherWidget()
+                             ),
                            ],
                            direction: orientation == Orientation.portrait ? Axis.vertical : Axis.horizontal,
                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -67,20 +73,13 @@ class _MainInterface extends State<MainInterface> implements VoiceUIController{
                        ),
                        flex: 10,
                      ),
-                     /*Expanded(
-                       child: FlatButton(
-                         child: CalendarWidget(),
-                         onPressed: () => displayMeeting(),
-                       ),
-                       flex: 6,
-                     ),*/
                      Expanded(
                        child: ControlBar(
                          onLintoClicked: () => onLinToClicked(),
                          onMicrophoneClicked: (value) => {},
                          onSettingClicked: () async => displaySettings(),
                        ),
-                       flex: orientation == Orientation.portrait ? 5 : 6,
+                       flex: orientation == Orientation.portrait ? 6 : 6,
                      )
                    ],
                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,

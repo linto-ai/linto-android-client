@@ -62,7 +62,7 @@ class _Home extends State<Home> {
               step: AuthenticationStep.FIRSTLAUNCH,)));
         return;
       } else if (!clientPrefs['keep_info']){
-        Navigator.push(context, MaterialPageRoute(builder: (context) =>
+        await Navigator.push(context, MaterialPageRoute(builder: (context) =>
             Login(mainController: _mainController,
               step: AuthenticationStep.NOTCONNECTED,)));
       } else {

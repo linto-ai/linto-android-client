@@ -7,6 +7,8 @@ class Transaction {
 
   Transaction(this._transactionID, {this.transactionState: TransactionState.RESOLVED});
 
+  Map<String, dynamic> conversationData = {};
+
   String get transactionID {
     return _transactionID;
   }

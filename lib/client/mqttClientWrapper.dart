@@ -23,6 +23,7 @@ class MQTTClientWrapper {
 
   MsgCallback _onError;
   MQTTMessageCallback _onMessage = (topic, msg) => print("$topic : $msg");
+  String _comTopic;
 
   set onMessage(MQTTMessageCallback cb) {
     _onMessage = cb;
@@ -38,11 +39,10 @@ class MQTTClientWrapper {
 
   void setupClient(String serverURI, String serverPort, String name,  String topic,{bool usesLogin: false, String login : "", String password : ""}) async {
       client = MqttServerClient.withPort(serverURI, name, int.parse(serverPort));
-      //client.logging(on: usesLogin);
       client.onDisconnected = _onDisconnect;
       client.onConnected = () => _onConnect("$topic/status");
       client.onSubscribed = _onSubscribe;
-      //client.logging(on: true);
+      _comTopic = topic;
       final connMess = MqttConnectMessage()
         .withClientIdentifier(name)
         .keepAliveFor(3600)
@@ -106,6 +106,14 @@ class MQTTClientWrapper {
     connectionState = MQTTCurrentConnectionState.DISCONNECTED;
   }
 
+  void _reconnect() async {
+    while (connectionState != MQTTCurrentConnectionState.CONNECTED) {
+      print("Try to reconnect to broker.");
+      await _connectClient("$_comTopic/status");
+
+    }
+  }
+
   void _onConnect(String topic) {
     connectionState = MQTTCurrentConnectionState.CONNECTED;
     print('MQTTClientWrapper::OnConnected client callback - Client connection was sucessful');
@@ -117,6 +125,7 @@ class MQTTClientWrapper {
   }
 
   void publish(String topic, Map<String, dynamic> payload, {bool retain: false,}) {
+    if (connectionState != MQTTCurrentConnectionState.CONNECTED) return;
     var payload_formated = jsonEncode(payload);
     MqttClientPayloadBuilder builder = MqttClientPayloadBuilder();
     builder.addString(payload_formated);

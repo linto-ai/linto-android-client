@@ -1,7 +1,10 @@
 import 'dart:convert';
+import 'dart:typed_data';
+
+import 'package:permission_handler/permission_handler.dart';
+import 'package:uuid/uuid.dart';
 
 import 'package:linto_flutter_client/logic/userpref.dart';
-import 'package:permission_handler/permission_handler.dart';
 import 'package:linto_flutter_client/client/client.dart';
 import 'package:linto_flutter_client/audio/audiomanager.dart';
 import 'package:linto_flutter_client/audio/audioPlayer.dart';
@@ -21,7 +24,7 @@ class MainController {
 
   final LinTOClient client = LinTOClient();           // Network connectivity
   final AudioManager audioManager = AudioManager();   // Audio input
-  final Audio _audioPlayer = Audio();                 // Audio output
+  final Audio _audioPlayer = Audio();               // Audio output
   final TTS _tts = TTS();                             // Text to speech
   VoiceUIController currentUI;                        // UI interface
   UserPreferences userPreferences = UserPreferences();// Persistent user preferences
@@ -73,8 +76,17 @@ class MainController {
 
   /// Called on MQTT message received.
   void _onMessage(String topic, String msg) {
-    var decodedMsg = jsonDecode(utf8.decode(msg.runes.toList()));
+    Map<String, dynamic> decodedMsg = jsonDecode(utf8.decode(msg.runes.toList()));
     String targetTopic = topic.split('/').last;
+    if (decodedMsg.keys.contains("error")) {
+      print("Reponse from server contains an error");
+      return;
+    } else if(decodedMsg.keys.contains("behavior")) {
+      if (decodedMsg["behavior"].keys.contains("say")) {
+        say(decodedMsg['behavior']["say"]);
+        currentUI.onMessage(decodedMsg['behavior']["say"]);
+      }
+    }
     if (targetTopic == 'say') {
       say(decodedMsg['value']);
       currentUI.onMessage('"${decodedMsg['value']}"');
@@ -83,9 +95,14 @@ class MainController {
 
   /// Synthesize speech
   void say(String value){
-    //shutdown detection
+    ClientState formerState = state;
+    state = ClientState.SPEAKING;
+    audioManager.stopDetecting();
     _tts.speak(value);
-    //resolve
+    state = formerState;
+    if(state == ClientState.LISTENING) {
+      audioManager.startDetecting();
+    }
   }
 
   /// Simulate keyword spotted
@@ -98,6 +115,8 @@ class MainController {
     if (state == ClientState.LISTENING) {
       audioManager.cancelUtterance();
     }
+    _tts.stop();
+
     state = ClientState.IDLE;
     if (! audioManager.isDetecting) {
       audioManager.startDetecting();
@@ -117,21 +136,43 @@ class MainController {
   void _onKeywordSpotted() {
     currentUI.onKeywordSpotted();
     _audioPlayer.playAsset(_audioAssets['START']);
-    audioManager.detectUtterance();
-    state = ClientState.LISTENING;
+    print(DateTime.now());
+    Future.delayed(const Duration(milliseconds: 750)).whenComplete(() {
+      print(DateTime.now());
+      audioManager.detectUtterance();
+      state = ClientState.LISTENING;
+    });
   }
 
   void _onUtteranceStart() {
-
     currentUI.onUtteranceStart();
   }
 
   void _onUtteranceEnd(List<int> signal) {
-    currentUI.onUtteranceEnd();
     _audioPlayer.playAsset(_audioAssets['STOP']);
-    client.sendMessage({'audio': rawSig2Wav(signal, 16000, 1, 16)});
+    currentUI.onUtteranceEnd();
+    if (_currentTransaction.transactionState == TransactionState.WFORCLIENT) {
+
+    } else {
+      _newTransaction();
+    }
+    _sendAudioRequest(_currentTransaction, signal);
+    _currentTransaction.transactionState = TransactionState.WFORSERVER;
     state = ClientState.REQUESTPENDING;
     currentUI.onRequestPending();
+  }
+
+  void _newTransaction() {
+    _currentTransaction = Transaction(Uuid().v4(), transactionState: TransactionState.WFORCLIENT);
+  }
+
+  void _sendAudioRequest(Transaction transaction, List<int> audio) {
+    Map<String, dynamic> request = Map<String, dynamic>();
+    request["transaction_id"] = transaction.transactionID;
+    request["audio"] = base64.encode(rawSig2Wav(audio, 16000, 1, 16));
+    print(request["audio"].length);
+    request['conversationData'] = transaction.conversationData;
+    client.sendMessage(request, subTopic: "/nlp/file/${transaction.transactionID}");
   }
 
   void _onUtteranceCanceled() {

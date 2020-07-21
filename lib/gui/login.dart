@@ -41,18 +41,20 @@ class _Login extends State<Login> {
         builder: (context) =>
             SafeArea(
                 child: Center(
-                    widthFactor: 0.95,
-                    heightFactor: 0.95,
+                    widthFactor: 1,
+                    heightFactor: 1,
                     child: Container(
+                      decoration: BoxDecoration(
+                          gradient: RadialGradient(
+                              colors: [Color.fromRGBO(255, 255, 255, 1), Color.fromRGBO(213, 231, 242, 1)]
+                          )
+                      ),
                       padding: EdgeInsets.all(20),
                       child: Flex(
                         direction: orientation == Orientation.portrait ? Axis.vertical : Axis.horizontal,
                         children: <Widget>[
                           Expanded(
-                            child: FlareDisplay(assetpath: 'assets/linto/linto.flr',
-                                animationName: 'idle',
-                                width: lintoWidth,
-                                height: lintoWidth),
+                            child: Image.asset('assets/icons/linto_ai.png',height: lintoWidth, fit: BoxFit.contain),
                             flex: 1,
                           ),
                           AuthenticationWidget(mainController : _mainController, scaffoldContext: context, startingStep: widget.step,)
@@ -97,6 +99,9 @@ class _AuthenticationWidget extends State<AuthenticationWidget> {
   final _passwordC = TextEditingController();
   final _serverC = TextEditingController(text: "https://");
 
+  final FocusNode _loginFocus = FocusNode();
+  final FocusNode _passwordFocus = FocusNode();
+
 
   void initState() {
     super.initState();
@@ -111,161 +116,16 @@ class _AuthenticationWidget extends State<AuthenticationWidget> {
     Orientation orientation = MediaQuery.of(context).orientation;
     switch(_step) {
       case AuthenticationStep.FIRSTLAUNCH : {
-        return Expanded(
-          child: Column(
-            children: <Widget>[
-              Spacer(),
-              Expanded(
-                child: AutoSizeText("Welcome ! To get started with LinTO press the setup button.",
-                  style: TextStyle(fontSize: 40), maxLines: 2,),
-                flex: 1,
-              ),
-              Expanded(
-                child: FlatButton(
-                  child: Text("Setup LinTO", style: TextStyle(fontSize: 30),),
-                  onPressed: () async {
-                    if (! await _mainController.requestPermissions()) {
-                      displaySnackMessage(context, "Permissions missing");
-                      return;
-                    }
-                    setState(() {
-                      _step = AuthenticationStep.NOTCONNECTED;
-                    });
-                  },
-                ),
-                flex: 2,
-              )
-            ],
-          ),
-        );
+        return welcomeWidget();
       }
       break;
       case AuthenticationStep.NOTCONNECTED : {
-        return Expanded(
-          child: Column(
-            children: <Widget>[
-              Spacer(),
-              Expanded(
-                child: AutoSizeText("Please input the authentication server.",
-                  style: TextStyle(fontSize: 40), maxLines: 2,),
-                flex: 1,
-              ),
-              Expanded(
-                child: Form(
-                  key :_formKey,
-                  child: TextFormField(
-                    controller: _serverC,
-                    decoration: InputDecoration(
-                        labelText: 'Server'
-                    ),
-                    validator: (value)  {
-                      if (value.isEmpty) {
-                        return 'Please enter login';
-                      }
-                      return null;
-                    },
-                    textInputAction: TextInputAction.done,
-                    onFieldSubmitted: (term) {
-                      _formKey.currentState.validate();
-                      requestServerRoutes(_scaffoldContext, _serverC.value.text);
-                    },
-                  ),
-                ),
-                flex: 2,
-              ),
-              FlatButton(
-                child: Text("Check Server"),
-                onPressed: () {requestServerRoutes(_scaffoldContext, _serverC.value.text);},
-              ),
-              Spacer()
-            ],
-          ),
-        );
+        return serverSelectionWidget();
       }
       break;
       // Credentials
       case AuthenticationStep.SERVERSELECTED : {
-        final FocusNode _loginFocus = FocusNode();
-        final FocusNode _passwordFocus = FocusNode();
-
-        return Expanded(
-            child: Form(
-              key: _formKey,
-              child: Flex(
-                direction: MediaQuery.of(context).orientation == Orientation.portrait ? Axis.vertical : Axis.horizontal,
-                children: <Widget>[
-                  Container(
-                    width: MediaQuery.of(context).size.width * (MediaQuery.of(context).orientation == Orientation.portrait ? 0.9 : 0.4),
-                    child: Column(
-                      children: <Widget>[
-                        TextFormField(
-                          decoration: InputDecoration(
-                              labelText: 'Login :'
-                          ),
-                          validator: (value)  {
-                            if (value.isEmpty) {
-                              return 'Please enter login';
-                            }
-                            return null;
-                          },
-                          controller: _loginC,
-                          textInputAction: TextInputAction.next,
-                          focusNode: _loginFocus,
-                          onFieldSubmitted: (term) {
-                            _loginFocus.unfocus();
-                            FocusScope.of(context).requestFocus(_passwordFocus);
-                          },
-                        ),
-                        TextFormField(
-                          decoration: InputDecoration(
-                            labelText: 'Password',
-
-                          ),
-                          validator: (value)  {
-                            if (value.isEmpty) {
-                              return 'Please enter password';
-                            }
-                            return null;
-                          },
-                          controller: _passwordC,
-                          obscureText: true,
-                          focusNode: _passwordFocus,
-                          textInputAction: TextInputAction.done,
-                          onFieldSubmitted: (term) {
-                            if (term.isNotEmpty) {
-                              authenticate(_scaffoldContext, _loginC.value.text, _passwordC.value.text);
-                            }
-                          },
-                        ),
-                        StatefulBuilder(
-                          builder: (context, _setState) => CheckboxListTile(
-                              title: Text("Remember me"),
-                              value: _remember,
-                              onChanged: (bool val) {
-                                setState(() {
-                                  _remember = val;
-                                });
-                              },
-                              controlAffinity: ListTileControlAffinity.leading
-                          ),
-                        ),
-                        FlatButton(
-                          child: Text('LOGIN', style: TextStyle(fontSize: 30),),
-                          onPressed: () {
-                            if (_loginC.value.text.isNotEmpty && _passwordC.value.text.isNotEmpty) {
-                              authenticate(_scaffoldContext, _loginC.value.text, _passwordC.value.text);
-                            }
-                          },
-                        )
-                      ],
-                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    ),
-                    padding: EdgeInsets.all(20),
-                  )
-                ],
-              ),
-            )
-        );
+        return credentialsWidget();
 
       }
       break;
@@ -273,6 +133,184 @@ class _AuthenticationWidget extends State<AuthenticationWidget> {
       break;
       case AuthenticationStep.CONNECTED: {}
     }
+  }
+
+  Widget serverSelectionWidget() {
+    return Expanded(
+      child: Column(
+        children: <Widget>[
+          Spacer(),
+          Expanded(
+            child: AutoSizeText("Please enter the authentication server.",
+              style: TextStyle(fontSize: 40), maxLines: 2,),
+            flex: 1,
+          ),
+          Expanded(
+            child: Form(
+              key :_formKey,
+              child: TextFormField(
+                controller: _serverC,
+                decoration: InputDecoration(
+                    labelText: 'Server'
+                ),
+                validator: (value)  {
+                  if (value.isEmpty) {
+                    return 'Please enter login';
+                  }
+                  return null;
+                },
+                textInputAction: TextInputAction.done,
+                onFieldSubmitted: (term) {
+                  _formKey.currentState.validate();
+                  requestServerRoutes(_scaffoldContext, _serverC.value.text);
+                },
+              ),
+            ),
+            flex: 2,
+          ),
+          RaisedButton(
+            color: Color.fromRGBO(60, 187, 242, 0.9),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: <Widget>[
+                Icon(Icons.input, color: Colors.white,),
+                Text("Check Server", style: TextStyle(fontSize: 20, color: Colors.white),),
+              ],
+            ),
+            onPressed: () {requestServerRoutes(_scaffoldContext, _serverC.value.text);},
+          ),
+
+          Spacer()
+        ],
+      ),
+    );
+  }
+
+  Widget credentialsWidget() {
+    return Expanded(
+        child: Form(
+          key: _formKey,
+          child: Flex(
+            direction: MediaQuery.of(context).orientation == Orientation.portrait ? Axis.vertical : Axis.horizontal,
+            children: <Widget>[
+              Container(
+
+                width: MediaQuery.of(context).size.width * (MediaQuery.of(context).orientation == Orientation.portrait ? 0.9 : 0.4),
+                child: Column(
+                  children: <Widget>[
+                    TextFormField(
+                      decoration: InputDecoration(
+                          labelText: 'Login :'
+                      ),
+                      validator: (value)  {
+                        if (value.isEmpty) {
+                          return 'Please enter login';
+                        }
+                        return null;
+                      },
+                      controller: _loginC,
+                      textInputAction: TextInputAction.next,
+                      focusNode: _loginFocus,
+                      onFieldSubmitted: (term) {
+                        _loginFocus.unfocus();
+                        FocusScope.of(context).requestFocus(_passwordFocus);
+                      },
+                    ),
+                    TextFormField(
+                      decoration: InputDecoration(
+                        labelText: 'Password',
+
+                      ),
+                      validator: (value)  {
+                        if (value.isEmpty) {
+                          return 'Please enter password';
+                        }
+                        return null;
+                      },
+                      controller: _passwordC,
+                      obscureText: true,
+                      focusNode: _passwordFocus,
+                      textInputAction: TextInputAction.done,
+                      onFieldSubmitted: (term) {
+                        if (term.isNotEmpty) {
+                          authenticate(_scaffoldContext, _loginC.value.text, _passwordC.value.text);
+                        }
+                      },
+                    ),
+                    StatefulBuilder(
+                      builder: (context, _setState) => CheckboxListTile(
+                          title: Text("Remember me"),
+                          value: _remember,
+                          onChanged: (bool val) {
+                            setState(() {
+                              _remember = val;
+                            });
+                          },
+                          controlAffinity: ListTileControlAffinity.leading
+                      ),
+                    ),
+                    RaisedButton(
+                      color: Color.fromRGBO(60, 187, 242, 0.9),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                        children: <Widget>[
+                          Icon(Icons.input, color: Colors.white,),
+                          Text("LOGIN", style: TextStyle(fontSize: 20, color: Colors.white),),
+                        ],
+                      ),
+                      onPressed: () {
+                        if (_loginC.value.text.isNotEmpty && _passwordC.value.text.isNotEmpty) {
+                          authenticate(_scaffoldContext, _loginC.value.text, _passwordC.value.text);
+                        }
+                      },
+                    ),
+                  ],
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                ),
+                padding: EdgeInsets.all(20),
+              )
+            ],
+          ),
+        )
+    );
+  }
+
+  Widget welcomeWidget() {
+    return Expanded(
+      child: Column(
+        children: <Widget>[
+          Spacer(),
+          Expanded(
+            child: AutoSizeText("Welcome ! To get started with LinTO press the setup button.",
+              style: TextStyle(fontSize: 40), maxLines: 2,),
+            flex: 1,
+          ),
+
+            RaisedButton(
+              color: Color.fromRGBO(60, 187, 242, 0.9),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: <Widget>[
+                  Icon(Icons.settings, color: Colors.white,),
+                  Text("Setup LinTO", style: TextStyle(fontSize: 30),),
+                ],
+              ),
+              onPressed: () async {
+                if (! await _mainController.requestPermissions()) {
+                  displaySnackMessage(context, "Permissions missing");
+                  return;
+                }
+                setState(() {
+                  _step = AuthenticationStep.NOTCONNECTED;
+                });
+              },
+            ),
+            Spacer()
+            //flex: 2,
+
+        ],
+      ),
+    );
   }
 
   void loadUserPref() {

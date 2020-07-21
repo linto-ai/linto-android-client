@@ -129,7 +129,6 @@ class LinTOClient {
       }
       break;
     }
-
   }
 
   void setAuthRoute(Map<String, dynamic> route) {
@@ -206,7 +205,7 @@ class LinTOClient {
   /// Throws [ClientErrorException] if an error is encountered.
   Future<List<dynamic>> requestScopes() async {
     print("Requesting scopes from server ...");
-    Map<String, String> requestHeaders = { 'Content-type': 'application/json', 'Accept': 'application/json', 'Authorization' : 'Token $_token'  };
+    Map<String, String> requestHeaders = { 'Content-type': 'application/json', 'Accept': 'application/json', 'Authorization' : 'Android $_token'  };
     var response;
     try {
       response = await http.get("$_authServURI$APIPREFIX${_authRoute['basePath']}$APISCOPES", headers: requestHeaders);
@@ -306,7 +305,9 @@ class LinTOClient {
   }
 
   void sendMessage(Map<String, dynamic> message, {String subTopic : ""}) {
-    mqttClient.publish(_publishingTopic, message );
+    message['auth_token'] = "Android ${_token}";
+    mqttClient.publish("$_publishingTopic$subTopic", message);
+    print("Send message on $_publishingTopic$subTopic");
   }
 
   void disconnect() {
@@ -316,4 +317,3 @@ class LinTOClient {
     }
   }
 }
-

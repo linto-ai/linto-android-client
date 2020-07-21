@@ -31,7 +31,7 @@ class _ControlBar extends State<ControlBar> {
         children: <Widget>[
           Expanded(
             child: FlatButton(
-              child: _micStatus ? Image.asset('assets/icons/mic_on.png', fit: BoxFit.fitHeight, height: 60, alignment: Alignment.topCenter,) : Image.asset('assets/icons/mic_off.png', fit: BoxFit.fitHeight, height: 60,),
+              child: _micStatus ? Icon(Icons.mic, size: 60,) : Icon(Icons.mic_off, size: 60),
               onPressed: () {
                 setState(() {
                   _micStatus = !_micStatus;
@@ -46,7 +46,7 @@ class _ControlBar extends State<ControlBar> {
           Spacer(),
           Expanded(
             child: FlatButton(
-              child: Image.asset('assets/icons/linto_alpha.png',height: 60, fit: BoxFit.contain),
+              child: Image.asset('assets/icons/linto_alpha.png',height: 100, fit: BoxFit.contain),
               onPressed: () => this.widget.onLintoClicked(),
             ),
             flex: 2,
@@ -54,7 +54,7 @@ class _ControlBar extends State<ControlBar> {
           Spacer(),
           Expanded(
             child: FlatButton(
-              child: Image.asset('assets/icons/settings.png', fit: BoxFit.contain, height: 50,),
+              child: Icon(Icons.settings, size: 60,),
               onPressed: () => this.widget.onSettingClicked(),
             ),
             flex: 2,

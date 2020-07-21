@@ -3,16 +3,21 @@ import 'dart:io';
 import 'dart:async';
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:path_provider/path_provider.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 const String PREFFILE = "userpref.json";
 const String TEMPLATEPATH = "assets/config/userpref.json";
+const String KEYSTOREPASSKEY = "linto_local_password";
 
 /// User preferences holds client and system preference and allows them to persist between sessions.
 class UserPreferences {
   Map<String, dynamic> clientPreferences;
   Map<String, dynamic> systemPreferences;
+  String password;
 
   File prefFile;
+
+  FlutterSecureStorage storage = FlutterSecureStorage();
 
   Future<void> init() async {
      await _loadPrefs();
@@ -49,6 +54,12 @@ class UserPreferences {
     String prefContent = await prefFile.readAsString();
     var preferences = jsonDecode(prefContent);
     clientPreferences = preferences["client"];
+    try {
+      password = await storage.read(key: KEYSTOREPASSKEY);
+    } on Exception catch(error) {
+      print(error);
+      password = "";
+    }
     systemPreferences = preferences["system"];
     print('User preferences loaded.');
   }
@@ -60,17 +71,9 @@ class UserPreferences {
     await prefFile.writeAsString(serialized);
   }
 
-  /// Get the user preferences file reference.
-  /// If the file does not exist, it creates it from template.
-  Future<File> _getPrefFile() async {
-    await getApplicationDocumentsDirectory().then((var directory) async {
-      String filePath = "${directory.path}/$PREFFILE";
-      await prefFile.exists().then((bool exist) async{
-        if (!exist) {
-          String basePrefs =  await rootBundle.loadString('assets/config/userpref.json');
-        }
-      });
-    });
+
+  void updatePassword(String password) async {
+    storage.write(key: KEYSTOREPASSKEY, value: password);
   }
 
   /// Write current user preferences to the local preferences file.

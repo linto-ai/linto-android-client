@@ -63,7 +63,7 @@ class TTS {
     }
   }
 
-  Future _stop() async {
+  Future stop() async {
     var result = await flutterTts.stop();
     if (result == 1) ttsState = TtsState.stopped;
   }

@@ -1,8 +1,5 @@
-import 'dart:ffi';
-
 import 'package:audioplayers/audio_cache.dart';
-import 'package:audioplayers/audioplayers.dart';
-import 'dart:typed_data';
+
 
 class Audio {
   static final int WAV_HEADER_LENGTH = 44;
@@ -19,5 +16,4 @@ class Audio {
 
   void playPCM(List<int> signal, {int sampleRate : 16000, int channels: 1}) {
   }
-
 }

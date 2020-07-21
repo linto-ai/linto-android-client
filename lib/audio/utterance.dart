@@ -14,14 +14,14 @@ enum UtteranceStatus {
 class Utterance {
   static const platform = const MethodChannel("vader");
 
-  static final int _SAMPLE_RATE = 16000;
-  static final int _ENCODING = 2;
+  static const int _SAMPLE_RATE = 16000;
+  static const int _ENCODING = 2;
 
-  static final int _N_PREV_FRAME = 10;
-  static final int _N_FOLLOW_FRAME = 10;
+  static const int _N_PREV_FRAME = 10;
+  static const int _N_FOLLOW_FRAME = 10;
 
   /// Frame size (sample), must be compatible with the vad engine.
-  static final int _VAD_FRAME_LENGTH = 480;
+  static const int _VAD_FRAME_LENGTH = 480;
 
   /// Signal buffer
   List<int> _signalBuffer = List<int>();
@@ -33,19 +33,16 @@ class Utterance {
   int _followToken = 0;
 
   /// Utterance buffer max size (second)
-  static final int _BUFFER_MAX_LENGTH = 20;
+  static const int _BUFFER_MAX_LENGTH = 20;
 
   /// Utterance buffer
   List<int> _utteranceBuffer = List<int>(_SAMPLE_RATE * _BUFFER_MAX_LENGTH);
   int _currentUttBufferPos = 0;
 
-  /// Actual utterance buffer length (sample)
-  int _bufferLength = 0;
-
   /// Utterance thresholds (n_frame * [_VAD_FRAME_LENGTH])
-  final int _SPEECH_TH = 16; // ~500ms
-  final int _SILENCE_TH = 33; // ~1000ms
-  final int _TIMEOUT_TH = 133; // ~4s
+  static const int _SPEECH_TH = 16; // ~500ms non-consecutive speech
+  static const int _SILENCE_TH = 35; // ~1050ms consecutive silence.
+  static const int _TIMEOUT_TH = 133; // ~4s consecutive silence
 
   /// Utterance counters
   int _speechC = 0;
@@ -80,7 +77,7 @@ class Utterance {
 
   /// Push [frame] into [_signalBuffer].
   /// If [_signalBuffer] reaches [_VAD_FRAME_LENGTH] detects speech.
-  /// If it does, calls [speechCallback] function.
+  /// If it does detect speech, calls [speechCallback] function.
   ///
   /// If _uttDetection is true, detects utterance and calls [utteranceCallback] at the end of utterance.
   ///
@@ -95,10 +92,10 @@ class Utterance {
        if (_utteranceDet) { // Add frame to utterance buffer
          _utteranceBuffer.setAll(_currentUttBufferPos, currentFrame);
          _currentUttBufferPos += currentFrame.length;
+         print("Added ${currentFrame.length} -> $_currentUttBufferPos (${_signalBuffer.length})"); // DEBUG
          if (_currentUttBufferPos + _VAD_FRAME_LENGTH > _SAMPLE_RATE * _BUFFER_MAX_LENGTH) {
            _onUtteranceBufferFull();
          }
-         //print("Sp : $_speechC | Sil: $_silenceC");
        }
     }
   }
@@ -116,6 +113,7 @@ class Utterance {
     }
   }
 
+  /// Callback on speech frame
   void _onSpeechFrame(List<int> frame) {
     _followToken = 0;
     List<int> speechFrame = List<int>();
@@ -131,12 +129,14 @@ class Utterance {
     _speechC += 1;
     _silenceC = 0;
   }
+
+  /// Clear buffered signal
   void clear() {
-    _bufferLength = 0;
     _followToken = 0;
     _prevFrames.clear();
   }
 
+  /// Callback on silence frame
   void _onSilenceFrame(List<int> frame) {
     if (_streamable) {
       if (_followToken < _N_FOLLOW_FRAME) {
@@ -149,14 +149,15 @@ class Utterance {
     }
     _silenceC += 1;
     if (_utteranceDet) {
-      if (_silenceC >= _TIMEOUT_TH) {
+      if (_silenceC >= _TIMEOUT_TH) {                                 // Timeout
         _onUtteranceTimeout();
-      } else if (_silenceC > _SILENCE_TH && _speechC > _SPEECH_TH) {
+      } else if (_silenceC > _SILENCE_TH && _speechC > _SPEECH_TH) {  // Utterance complete
         _onUtteranceEnd();
       }
     }
   }
 
+  /// Cache silence frame in a queue.
   void _addToFrameBuffer(List<int> frame) {
     _prevFrames.add(frame);
     if (_prevFrames.length > _N_PREV_FRAME) {
@@ -164,9 +165,11 @@ class Utterance {
     }
   }
 
+  /// Starts detecting utterance.
+  /// When utterance end is detected calls [callBack] with signal and status
   void detectUtterance(Function(List<int>, UtteranceStatus) callBack) {
     _currentUttBufferPos = 0;
-    print("Start detec utterance");
+    print("Start detecting utterance");
     _utteranceCallback = callBack;
     _silenceC = 0;
     _speechC = 0;
@@ -174,12 +177,14 @@ class Utterance {
     _utteranceDet = true;
   }
 
+  /// Stops utterance detection
   void stopDetectUtterance() {
     _utteranceCallback = null;
     _streamable = true;
     _utteranceDet = false;
   }
 
+  /// Cancels utterance detection
   void cancelDetUtterance() {
     _onUtteranceCanceled();
   }
@@ -193,16 +198,18 @@ class Utterance {
   /// Called at utterance end
   void _onUtteranceEnd() {
     print('UTTERANCE: threshold reached');
-    print("Sp : $_speechC | Sil: $_silenceC");
+    print("Sp : $_speechC | Sil: $_silenceC | buffer size: $_currentUttBufferPos");
     _utteranceCallback(_utteranceBuffer.sublist(0, _currentUttBufferPos), UtteranceStatus.thresholdReached);
     stopDetectUtterance();
   }
+
   /// Called when [_silenceC] has reach [_TIMEOUT_TH] value
   void _onUtteranceTimeout() {
     print('UTTERANCE: timeout');
     _utteranceCallback(null, UtteranceStatus.timeout);
     stopDetectUtterance();
   }
+
   /// Called when [cancelDetUtterance] is invoked
   void _onUtteranceCanceled() {
     print('UTTERANCE: canceled');

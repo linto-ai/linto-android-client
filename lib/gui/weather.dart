@@ -6,7 +6,7 @@ import 'package:webview_flutter/webview_flutter.dart';
 const String weatherWidgetExemple = '''
 <!DOCSTRING html><html>
 <body>
-<a class="weatherwidget-io" href="https://forecast7.com/fr/43d601d44/toulouse/" data-label_1="TOULOUSE" data-label_2="WEATHER" data-icons="Climacons Animated" data-mode="Current" data-theme="pure" >TOULOUSE WEATHER</a>
+<a class="weatherwidget-io" href="https://forecast7.com/fr/43d601d44/toulouse/" data-label_1="TOULOUSE" data-label_2="WEATHER" data-icons="Climacons Animated" data-mode="Current" data-theme="pure" data-basecolor="" >TOULOUSE WEATHER</a>
 <script>
 !function(d,s,id){var js,fjs=d.getElementsByTagName(s)[0];if(!d.getElementById(id)){js=d.createElement(s);js.id=id;js.src='https://weatherwidget.io/js/widget.min.js';fjs.parentNode.insertBefore(js,fjs);}}(document,'script','weatherwidget-io-js');
 </script>
@@ -28,10 +28,8 @@ class _WeatherWidgetState extends State<WeatherWidget> {
   @override
   Widget build(BuildContext context) {
     Orientation orientation = MediaQuery.of(context).orientation;
-    return Container(
-      child: WeatherWebview(weatherWidgetExemple),
-      //decoration: BoxDecoration(border: Border.all(),),
-    );
+    return  WeatherWebview(weatherWidgetExemple);
+
   }
 
 }
