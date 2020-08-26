@@ -42,4 +42,8 @@ class VoiceUIController{
   void onDisconnect() {
     print('Disconnected');
   }
+
+  void display(String content, bool isURL) {
+    print("Displaying content");
+  }
 }

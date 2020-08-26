@@ -2,7 +2,6 @@ import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:linto_flutter_client/gui/calendar.dart';
 import 'package:linto_flutter_client/gui/clock.dart';
 import 'package:linto_flutter_client/gui/meeting.dart';
 import 'package:linto_flutter_client/gui/settings.dart';
@@ -12,6 +11,7 @@ import 'package:linto_flutter_client/logic/maincontroller.dart';
 import 'package:sliding_up_panel/sliding_up_panel.dart';
 import 'package:linto_flutter_client/gui/controls.dart';
 import 'package:linto_flutter_client/logic/uicontroller.dart';
+import 'package:linto_flutter_client/gui/webviews.dart';
 
 class MainInterface extends StatefulWidget {
   final MainController mainController;
@@ -105,8 +105,9 @@ class _MainInterface extends State<MainInterface> implements VoiceUIController{
   }
 
   void onLinToClicked(){
-    _mainController.triggerKeyWord();
-    expandPanel();
+    displayMeeting();
+    //_mainController.triggerKeyWord();
+    //expandPanel();
   }
   void onKeyword() {
     expandPanel();
@@ -140,6 +141,9 @@ class _MainInterface extends State<MainInterface> implements VoiceUIController{
   @override
   void onLintoSpeakingStop() {
     panel.stopSpeaking();
+    Future.delayed(const Duration(seconds: 3)).whenComplete(() {
+      closePanel();
+    });
   }
 
   @override
@@ -171,5 +175,10 @@ class _MainInterface extends State<MainInterface> implements VoiceUIController{
   @override
   void onDisconnect() {
     Navigator.pop(context, false);
+  }
+
+  @override
+  void display(String content, bool isURL) {
+    showWebviewDialog(context, content, isURL);
   }
 }

@@ -46,7 +46,6 @@ class TTS {
     flutterTts.setCompletionHandler(_stopCallback);
   }
 
-
   Future<List<String>> getLanguages() async {
     languages = await flutterTts.getLanguages;
     return languages;
@@ -56,6 +55,7 @@ class TTS {
     await flutterTts.setVolume(volume);
     await flutterTts.setSpeechRate(rate);
     await flutterTts.setPitch(pitch);
+    flutterTts.setCompletionHandler(_stopCallback);
 
     var result = await flutterTts.speak(text);
     if (result == 1) {

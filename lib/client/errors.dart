@@ -9,6 +9,7 @@ Map<String, List<String> > ERROR_CODES = {
   '0x0008' : ['API not found', 'Could not authenticate on this server'],
   '0x0009' : ['Request Timeout', 'Connexion attempt has timed out'],
   '0x0010' : ['Socket Error', 'Could not reach the server'],
+  '0x0011' : ['No Application', 'User has no application attached.'],
   '0xFFFF' : ['Unknown', 'Unknow Error']
 };
 

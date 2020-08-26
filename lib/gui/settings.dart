@@ -155,7 +155,7 @@ class _OptionInterface extends State<OptionInterface> {
                                     Text("Disconnect")
                                   ],
                                 ),
-                                onPressed: () async => onDisconnect(context),
+                                onPressed: ()  async => await onDisconnect(context),
                               )
                             ],
                           ),
@@ -178,8 +178,8 @@ class _OptionInterface extends State<OptionInterface> {
     Navigator.pop(context, false);
   }
 
-  void onDisconnect(BuildContext context) async {
-    confirmDialog(context, "Disconnect ?").then((bool toDisconnect) {
+  Future<void> onDisconnect(BuildContext context) async {
+    await confirmDialog(context, "Disconnect ?").then((bool toDisconnect) {
       if (toDisconnect) {
         _userPref.clientPreferences["keep_info"] = false;
         _userPref.updatePrefs();
@@ -209,7 +209,7 @@ Container SysInfoEntry (String key, String value) {
     child: Row(
       children: <Widget>[
         Text(key.padRight(10, ' ') ,style: TextStyle(fontWeight: FontWeight.bold),),
-        Text(value)
+        Text(value.length < 20 ? value :value.substring(0,20))
       ],
     ),
   );

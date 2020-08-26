@@ -7,6 +7,7 @@ import 'package:linto_flutter_client/gui/utils/flaredisplay.dart';
 import 'package:linto_flutter_client/gui/lintoDisplay.dart';
 import "package:flutter/material.dart";
 import 'package:flutter/services.dart';
+import 'package:linto_flutter_client/logic/uicontroller.dart';
 
 class MeetingInterface extends StatefulWidget {
   MeetingInterface({Key key}) : super(key: key);
@@ -15,7 +16,8 @@ class MeetingInterface extends StatefulWidget {
   _MeetingInterface createState() => new _MeetingInterface();
 }
 
-class _MeetingInterface extends State<MeetingInterface> {
+class _MeetingInterface extends State<MeetingInterface> implements VoiceUIController{
+  bool isActiveView = true;
   bool _isPaused = false;
   String _meetingName = 'Point sur les avancées du projet';
 
@@ -41,48 +43,53 @@ class _MeetingInterface extends State<MeetingInterface> {
     return Scaffold(
         body: SafeArea(
             child: Center(
-              child: Column(
-                children: <Widget>[
-                  Container(// Time and Rec Icon
-                    child: Row(
-                      children: <Widget>[
-                        Text(_time, style: TextStyle(fontSize: 30),),
-                        FlareDisplay(assetpath: 'assets/icons/recording.flr',
-                            animationName: 'recording',
-                            width: 50,
-                            height: 50)
-                      ],
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              child: Container(
+                decoration: BoxDecoration(
+                    gradient: RadialGradient(
+                        colors: [Color.fromRGBO(255, 255, 255, 1), Color.fromRGBO(213, 231, 242, 1)]
+                    )
+                ),
+                child: Column(
+                  children: <Widget>[
+                    Container(// Time and Rec Icon
+                      child: Row(
+                        children: <Widget>[
+                          Text(_time, style: TextStyle(fontSize: 30),),
+                          FlareDisplay(assetpath: 'assets/icons/recording.flr',
+                              animationName: 'recording',
+                              width: 50,
+                              height: 50)
+                        ],
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      ),
+                      padding: EdgeInsets.only(left: 10, right: 10),
                     ),
-                    padding: EdgeInsets.only(left: 10, right: 10),
-                    decoration: BoxDecoration(border: Border.all(),),
-                  ),
-                  Container(// LinTo and meeting info and controls
-                    child: Flex(
-                      direction: orientation == Orientation.portrait ? Axis.vertical: Axis.horizontal,
-                      children: <Widget>[
-                        FlareDisplay(assetpath: 'assets/linto/linto.flr',
-                          animationName: 'idle',
-                          width: windowWidth * lintoSizeFactor,
-                          height: windowWidth * lintoSizeFactor,),
-                        Container(
-                          child: Column(
-                            children: <Widget>[
-                              Expanded(
-                                child: Container(
-                                  child: AutoSizeText(_meetingName, style: TextStyle(fontSize: 50),textAlign: TextAlign.center,),
+                    Container(// LinTo and meeting info and controls
+                      child: Flex(
+                        direction: orientation == Orientation.portrait ? Axis.vertical: Axis.horizontal,
+                        children: <Widget>[
+                          FlareDisplay(assetpath: 'assets/linto/linto.flr',
+                            animationName: 'idle',
+                            width: windowWidth * lintoSizeFactor,
+                            height: windowWidth * lintoSizeFactor,),
+                          Container(
+                            child: Column(
+                              children: <Widget>[
+                                Expanded(
+                                  child: Container(
+                                    child: AutoSizeText(_meetingName, style: TextStyle(fontSize: 50),textAlign: TextAlign.center,),
+                                  ),
+                                  flex: 2,
                                 ),
-                                flex: 2,
-                              ),
-                              Expanded(
+                                Expanded(
                                   child: Container(
                                     child: AutoSizeText(_duration, style: TextStyle(fontSize: 50),textAlign: TextAlign.center,),
                                   ),
-                                flex: 1,
-                              ),
-                              Expanded(
+                                  flex: 1,
+                                ),
+                                Expanded(
                                   child: Container(
-                                    child: Flex(
+                                      child: Flex(
                                         direction: orientation == Orientation.portrait ? Axis.vertical: Axis.horizontal,
                                         children: <Widget>[
                                           FlatButton(
@@ -92,31 +99,33 @@ class _MeetingInterface extends State<MeetingInterface> {
                                             child: AutoSizeText("End meeting", style: TextStyle(fontSize: 20)),
                                             onPressed: () => Navigator.pop(context),
                                           )
-                                      ],
-                                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                                    )
+                                        ],
+                                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                                      )
                                   ),
-                                flex: 2,
-                              ),
-                            ],
-                          ),
-                          //decoration: BoxDecoration(border: Border.all()),
-                          height: orientation == Orientation.portrait ? windowHeight * 0.45: windowWidth * lintoSizeFactor,
-                          width: orientation == Orientation.portrait ? windowWidth : windowWidth - (windowWidth * lintoSizeFactor) - 2,
-                        )
-                      ],
+                                  flex: 2,
+                                ),
+                              ],
+                            ),
+                            //decoration: BoxDecoration(border: Border.all()),
+                            height: orientation == Orientation.portrait ? windowHeight * 0.45: windowWidth * lintoSizeFactor,
+                            width: orientation == Orientation.portrait ? windowWidth : windowWidth - (windowWidth * lintoSizeFactor) - 2,
+                          )
+                        ],
+                      ),
+                      //decoration: BoxDecoration(border: Border.all()),
                     ),
-                    //decoration: BoxDecoration(border: Border.all()),
-                  ),
-                  Container( // Bottom Bar
-                    child: Row(
-                      children: <Widget>[
+                    Container( // Bottom Bar
+                      child: Row(
+                        children: <Widget>[
 
-                      ],
-                    ),
-                  )
-                ],
+                        ],
+                      ),
+                    )
+                  ],
+                ),
               )
+
             ),
         )
     );
@@ -146,5 +155,55 @@ class _MeetingInterface extends State<MeetingInterface> {
   void dispose() {
     _timer.cancel();
     super.dispose();
+  }
+
+  @override
+  void onKeywordSpotted() {
+
+  }
+
+  @override
+  void onLintoSpeakingStart() {
+
+  }
+
+  @override
+  void onLintoSpeakingStop() {
+
+  }
+
+  @override
+  void onRequestPending() {
+
+  }
+
+  @override
+  void onUtteranceCanceled() {
+
+  }
+
+  @override
+  void onUtteranceEnd() {
+    // TODO: implement onUtteranceEnd
+  }
+
+  @override
+  void onUtteranceStart() {
+
+  }
+
+  @override
+  void onMessage(String msg) {
+
+  }
+
+  @override
+  void onDisconnect() {
+
+  }
+
+  @override
+  void display(String content, bool isURL) {
+
   }
 }

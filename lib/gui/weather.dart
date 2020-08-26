@@ -14,6 +14,7 @@ const String weatherWidgetExemple = '''
 </html>
 ''';
 
+
 class WeatherWidget extends StatefulWidget {
   @override
   _WeatherWidgetState createState() => _WeatherWidgetState();
@@ -31,7 +32,6 @@ class _WeatherWidgetState extends State<WeatherWidget> {
     return  WeatherWebview(weatherWidgetExemple);
 
   }
-
 }
 
 class WeatherWebview extends StatelessWidget {

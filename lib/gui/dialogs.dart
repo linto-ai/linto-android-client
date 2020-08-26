@@ -68,12 +68,14 @@ Future<bool> confirmDialog(BuildContext context, String title, {String descripti
           Text(description),
           SimpleDialogOption(
             child: Text("Disconnect"),
-            onPressed: () => Navigator.pop(context, true),
-          ),
+            onPressed: () {
+              Navigator.pop(context, true);
+            }),
           SimpleDialogOption(
             child: Text("Cancel"),
-            onPressed: () => Navigator.pop(context, false),
-          )
+              onPressed: () {
+                Navigator.pop(context, false);
+              }),
         ],
       );
     }

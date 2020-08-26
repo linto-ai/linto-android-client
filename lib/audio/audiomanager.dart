@@ -10,7 +10,7 @@ import 'kws.dart';
 import 'utterance.dart';
 import 'package:linto_flutter_client/logic/customtypes.dart';
 
-final String CONFIG_FILE_PATH = "assets/config/config.json";
+const String CONFIG_FILE_PATH = "assets/config/config.json";
 
 class AudioManager {
   // Settings
@@ -74,9 +74,6 @@ class AudioManager {
   SignalCallback _onUtteranceEnd = (signal) => print('Unset onUtteranceEnd Callback with signal length ${signal.length}');
   VoidCallback _onCanceled = () => print('Unset onCanceled Callback');
 
-  // Client callback
-  SignalCallback _onCommand = (file) => print('Unset onCommand Callback');
-
   AudioManager() : super();
 
   void initialize() async {
@@ -101,8 +98,10 @@ class AudioManager {
   // Callback functions
   void _onAudioFrames(List<num> signal) {
     _utterance.onFrame(signal);
-    //Stopwatch stopwatch = new Stopwatch()..start();
-    //print('$i mfcc extracted in ${stopwatch.elapsed.inMilliseconds} ms');
+    if (_inputRecorded) {
+      Uint8List signalBytes = Uint8List.fromList(signal);
+      _currentWritingFile.writeAsBytesSync(signalBytes);
+    }
   }
 
   void _onSilenceFrame(List<int> frame) {
@@ -176,8 +175,8 @@ class AudioManager {
   void _onKWSpotted(double confidence) {
     if (_isDetecting) {
       _kws.flushFeatures();
-      _onDetection();
       stopDetecting();
+      _onDetection();
       print("KEYWORD SPOTTED !! at $confidence");
     }
   }
@@ -204,13 +203,26 @@ class AudioManager {
     }
     String filePath = await getFilePath(fileName);
     _currentWritingFile = File(filePath);
+    _inputRecorded = true;
   }
 
   void pauseRecording() {
+    if (_inputRecorded) {
+      _inputRecorded = false;
+    }
+  }
 
+  void resumeRecording() {
+    if (!_inputRecorded) {
+      _inputRecorded = true;
+    }
   }
 
   void stopRecording() {
+    if (_inputRecorded) {
+      _inputRecorded = false;
+
+    }
   }
   /// Get the path to a Document Directory File using [fileName].
   Future<String> getFilePath(String fileName) async {

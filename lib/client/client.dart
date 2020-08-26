@@ -17,7 +17,8 @@ enum AuthenticationStep{
 class LinTOClient {
 
   final String APIROUTES = "/auths";
-  final String APIAUTHSUFFIX = "/login";
+  final String APIAUTHSUFFIX = "/android/login";
+  final String APILOGOUTSUFFIX = "/android/logout";
   final String APISCOPES = "/scopes";
   final String APIPREFIX = "/overwatch";
 
@@ -146,7 +147,7 @@ class LinTOClient {
     try {
       response = await http.post("$_authServURI$APIPREFIX${_authRoute['basePath']}$APIAUTHSUFFIX",
           headers: requestHeaders,
-          body: jsonEncode({"username": login, "password" : password})).timeout(Duration(seconds: 5));
+          body: jsonEncode({"email": login, "password" : password})).timeout(Duration(seconds: 5));
     } on TimeoutException catch (_) {
       throw ClientErrorException('0x0009');
     } on SocketException catch (_) {
@@ -205,7 +206,7 @@ class LinTOClient {
   /// Throws [ClientErrorException] if an error is encountered.
   Future<List<dynamic>> requestScopes() async {
     print("Requesting scopes from server ...");
-    Map<String, String> requestHeaders = { 'Content-type': 'application/json', 'Accept': 'application/json', 'Authorization' : 'Android $_token'  };
+    Map<String, String> requestHeaders = { 'Content-type': 'application/json', 'Accept': 'application/json', 'Authorization' : 'Android $_token'};
     var response;
     try {
       response = await http.get("$_authServURI$APIPREFIX${_authRoute['basePath']}$APISCOPES", headers: requestHeaders);
@@ -218,12 +219,16 @@ class LinTOClient {
       case 200: {
         print('Response status: ${response.statusCode}');
         print('Response body: ${response.body}');
+        List<dynamic> res;
         try {
-          List<dynamic> res = json.decode(response.body);
-          return res;
+          res = json.decode(response.body);
         } on Exception catch (_) {
           throw ClientErrorException('0x0007');
         }
+        if (res.length == 0) {
+          throw ClientErrorException('0x0011');
+        }
+        return res;
       }
       break;
 
@@ -279,14 +284,14 @@ class LinTOClient {
       return step;
     }
 
-    step = AuthenticationStep.AUTHENTICATED;
-
     var scopes;
     try {
       scopes = await requestScopes();
     } on ClientErrorException catch(error) {
       return step;
     }
+
+    step = AuthenticationStep.AUTHENTICATED;
 
     if ( ! scopes.map((e) => e['topic']).contains(scope)){
       return step;
@@ -305,13 +310,41 @@ class LinTOClient {
   }
 
   void sendMessage(Map<String, dynamic> message, {String subTopic : ""}) {
+    if (mqttClient.connectionState != MQTTCurrentConnectionState.CONNECTED) {
+      print("Client MQTT disconnected disconnected, reconnecting...");
+      //TODO
+      return;
+    }
     message['auth_token'] = "Android ${_token}";
     mqttClient.publish("$_publishingTopic$subTopic", message);
     print("Send message on $_publishingTopic$subTopic");
   }
 
-  void disconnect() {
+  void requestNewToken() {
+    //TODO
+  }
+
+  void disconnect() async {
     if (_authentificated) {
+      Map<String, String> requestHeaders = { 'Content-type': 'application/json', 'Accept': 'application/json', 'Authorization' : 'Android $_token'};
+      var response;
+      try {
+        response = await http.get("$_authServURI$APIPREFIX${_authRoute['basePath']}$APILOGOUTSUFFIX", headers: requestHeaders);
+      } on TimeoutException catch (_) {
+        print('Disconnect timeout');
+      } on SocketException catch (_) {
+        print('Disconnect didn\'t reach server.');
+      }
+      switch(response.statusCode) {
+        case 200: {
+          print('Disconnect response status: ${response.statusCode}');
+        }
+        break;
+        default: {
+          print('Disconnect response status: ${response.statusCode}');
+        }
+        break;
+      }
       _authentificated = false;
       mqttClient.disconnect();
     }

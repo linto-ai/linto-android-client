@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:typed_data';
 
+import 'package:flutter/cupertino.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:uuid/uuid.dart';
 
@@ -24,7 +25,7 @@ class MainController {
 
   final LinTOClient client = LinTOClient();           // Network connectivity
   final AudioManager audioManager = AudioManager();   // Audio input
-  final Audio _audioPlayer = Audio();               // Audio output
+  final Audio _audioPlayer = Audio();                 // Audio output
   final TTS _tts = TTS();                             // Text to speech
   VoiceUIController currentUI;                        // UI interface
   UserPreferences userPreferences = UserPreferences();// Persistent user preferences
@@ -66,12 +67,11 @@ class MainController {
       _tts.initTts();
       _tts.startCallback = currentUI.onLintoSpeakingStart;
       _tts.stopCallback = currentUI.onLintoSpeakingStop;
-      client.onMQTTMsg = _onMessage;
-      state = ClientState.IDLE;
     } else if (state == ClientState.DISCONNECTED) {
       audioManager.startDetecting();
-      state = ClientState.IDLE;
     }
+    client.onMQTTMsg = _onMessage;
+    state = ClientState.IDLE;
   }
 
   /// Called on MQTT message received.
@@ -79,30 +79,51 @@ class MainController {
     Map<String, dynamic> decodedMsg = jsonDecode(utf8.decode(msg.runes.toList()));
     String targetTopic = topic.split('/').last;
     if (decodedMsg.keys.contains("error")) {
-      print("Reponse from server contains an error");
+      _resolveErrors(decodedMsg['error']);
       return;
     } else if(decodedMsg.keys.contains("behavior")) {
-      if (decodedMsg["behavior"].keys.contains("say")) {
-        say(decodedMsg['behavior']["say"]);
-        currentUI.onMessage(decodedMsg['behavior']["say"]);
-      }
-    }
-    if (targetTopic == 'say') {
-      say(decodedMsg['value']);
-      currentUI.onMessage('"${decodedMsg['value']}"');
+      _resolveBehaviors(decodedMsg['behavior']);
     }
   }
 
+  void _resolveBehaviors(Map<String, dynamic> behaviors) {
+    if (behaviors.keys.contains("say")) {
+      say(behaviors["say"]["text"], currentUI.onLintoSpeakingStop);
+      currentUI.onMessage(behaviors["say"]["text"]);
+    } else if (behaviors.keys.contains("ask")) {
+      _currentTransaction.conversationData = behaviors["conversationData"];
+      _currentTransaction.transactionState = TransactionState.WFORCLIENT;
+      ask(behaviors["ask"]["text"]);
+    }
+
+    if (behaviors.keys.contains("display")) {
+      display(behaviors["display"]["content"], behaviors["display"]["type"] == 'URL');
+    }
+  }
+
+  void _resolveErrors(Map<String, dynamic> error) {
+
+  }
+
   /// Synthesize speech
-  void say(String value){
+  void say(String value, VoidCallback stopCallback){
     ClientState formerState = state;
     state = ClientState.SPEAKING;
     audioManager.stopDetecting();
+    _tts.stopCallback = stopCallback;
     _tts.speak(value);
     state = formerState;
     if(state == ClientState.LISTENING) {
       audioManager.startDetecting();
     }
+  }
+
+  void ask(String value) {
+    say(value, audioManager.detectUtterance);
+  }
+
+  void display(String content, bool isURL) {
+    currentUI.display(content, isURL);
   }
 
   /// Simulate keyword spotted
@@ -121,6 +142,10 @@ class MainController {
     if (! audioManager.isDetecting) {
       audioManager.startDetecting();
     }
+  }
+
+  void displayWebview(String toDisplay, bool isURL) {
+
   }
 
   /// Bind audio input callbacks

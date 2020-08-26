@@ -129,7 +129,9 @@ class _AuthenticationWidget extends State<AuthenticationWidget> {
 
       }
       break;
-      case AuthenticationStep.AUTHENTICATED : {}
+      case AuthenticationStep.AUTHENTICATED : {
+        return credentialsWidget();
+      }
       break;
       case AuthenticationStep.CONNECTED: {}
     }

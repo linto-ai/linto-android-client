@@ -18,7 +18,7 @@ class Utterance {
   static const int _ENCODING = 2;
 
   static const int _N_PREV_FRAME = 10;
-  static const int _N_FOLLOW_FRAME = 10;
+  static const int _N_FOLLOW_FRAME = 12;
 
   /// Frame size (sample), must be compatible with the vad engine.
   static const int _VAD_FRAME_LENGTH = 480;
@@ -40,7 +40,7 @@ class Utterance {
   int _currentUttBufferPos = 0;
 
   /// Utterance thresholds (n_frame * [_VAD_FRAME_LENGTH])
-  static const int _SPEECH_TH = 16; // ~500ms non-consecutive speech
+  static const int _SPEECH_TH = 7; // ~200ms non-consecutive speech
   static const int _SILENCE_TH = 35; // ~1050ms consecutive silence.
   static const int _TIMEOUT_TH = 133; // ~4s consecutive silence
 
@@ -151,6 +151,7 @@ class Utterance {
     if (_utteranceDet) {
       if (_silenceC >= _TIMEOUT_TH) {                                 // Timeout
         _onUtteranceTimeout();
+        //print("Sp : $_speechC | Sil: $_silenceC | buffer size: $_currentUttBufferPos");
       } else if (_silenceC > _SILENCE_TH && _speechC > _SPEECH_TH) {  // Utterance complete
         _onUtteranceEnd();
       }
