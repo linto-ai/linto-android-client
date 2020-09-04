@@ -2,7 +2,7 @@ import 'dart:typed_data';
 
 /// Converts List<int> signal into a wave file buffer including header.
 Uint8List rawSig2Wav(List<int> signal, int sampleRate, int channels, int encoding) {
-  Uint8List header = generateWavHeader(signal.length, sampleRate, channels, encoding);
+  Uint8List header = generateWavHeader(signal.length * 2, sampleRate, channels, encoding);
   Uint8List signal_uint8 = listIntToUintList(signal);
   print(signal_uint8.length);
   Uint8List waveContent = Uint8List(header.length + signal_uint8.length);

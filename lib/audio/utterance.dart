@@ -88,7 +88,6 @@ class Utterance {
     while(_signalBuffer.length >= _VAD_FRAME_LENGTH) {
        currentFrame = _signalBuffer.sublist(0, _VAD_FRAME_LENGTH);
        _signalBuffer = _signalBuffer.sublist(_VAD_FRAME_LENGTH);
-       _isSpeech(currentFrame);
        if (_utteranceDet) { // Add frame to utterance buffer
          _utteranceBuffer.setAll(_currentUttBufferPos, currentFrame);
          _currentUttBufferPos += currentFrame.length;
@@ -97,6 +96,7 @@ class Utterance {
            _onUtteranceBufferFull();
          }
        }
+       _isSpeech(currentFrame);
     }
   }
 

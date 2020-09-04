@@ -105,9 +105,8 @@ class _MainInterface extends State<MainInterface> implements VoiceUIController{
   }
 
   void onLinToClicked(){
-    displayMeeting();
-    //_mainController.triggerKeyWord();
-    //expandPanel();
+    _mainController.triggerKeyWord();
+    expandPanel();
   }
   void onKeyword() {
     expandPanel();
