@@ -1,3 +1,4 @@
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:auto_size_text/auto_size_text.dart';
@@ -12,7 +13,7 @@ import 'package:linto_flutter_client/gui/mainInterface.dart';
 class Login extends StatefulWidget {
   final MainController mainController;
   final AuthenticationStep step;
-  const Login({ Key key, this.mainController, this.step : AuthenticationStep.NOTCONNECTED}) : super(key: key);
+  const Login({ Key key, this.mainController, this.step : AuthenticationStep.SERVERSELECTION}) : super(key: key);
   @override
   _Login createState() => _Login();
 }
@@ -36,35 +37,37 @@ class _Login extends State<Login> {
   Widget build(BuildContext context) {
     Orientation orientation = MediaQuery.of(context).orientation;
     double lintoWidth = MediaQuery.of(context).size.width * (orientation == Orientation.portrait ? 0.9: 0.45);
-    return Scaffold(
-      body: Builder(
-        builder: (context) =>
-            SafeArea(
-                child: Center(
-                    widthFactor: 1,
-                    heightFactor: 1,
-                    child: Container(
-                      decoration: BoxDecoration(
-                          gradient: RadialGradient(
-                              colors: [Color.fromRGBO(255, 255, 255, 1), Color.fromRGBO(213, 231, 242, 1)]
-                          )
-                      ),
-                      padding: EdgeInsets.all(20),
-                      child: Flex(
-                        direction: orientation == Orientation.portrait ? Axis.vertical : Axis.horizontal,
-                        children: <Widget>[
-                          Expanded(
-                            child: Image.asset('assets/icons/linto_ai.png',height: lintoWidth, fit: BoxFit.contain),
-                            flex: 1,
-                          ),
-                          AuthenticationWidget(mainController : _mainController, scaffoldContext: context, startingStep: widget.step,)
-                        ],
-                      ),
-                    )
-                )
-            ),
+    AuthenticationWidget authWidget = AuthenticationWidget(mainController : _mainController, scaffoldContext: context, startingStep: widget.step,);
+    return WillPopScope(
+      onWillPop: () {},
+      child: Scaffold(
+        body: Builder(
+          builder: (context) =>
+              SafeArea(
+                  child: Center(
+                      widthFactor: 1,
+                      heightFactor: 1,
+                      child: Container(
+                        decoration: BoxDecoration(
+                            gradient: RadialGradient(
+                                colors: [Color.fromRGBO(255, 255, 255, 1), Color.fromRGBO(213, 231, 242, 1)]
+                            )
+                        ),
+                        padding: EdgeInsets.all(20),
+                        child: Flex(
+                          direction: orientation == Orientation.portrait ? Axis.vertical : Axis.horizontal,
+                          children: <Widget>[
+                            authWidget,
+
+                          ],
+                        ),
+                      )
+                  )
+              ),
+        ),
+        resizeToAvoidBottomInset: true,
       ),
-      resizeToAvoidBottomInset: false,);
+    );
   }
 }
 
@@ -73,7 +76,10 @@ class AuthenticationWidget extends StatefulWidget {
   final MainController mainController;
   final BuildContext scaffoldContext;
   final AuthenticationStep startingStep;
-  const AuthenticationWidget({ Key key, this.mainController, this.scaffoldContext, this.startingStep : AuthenticationStep.NOTCONNECTED}) : super(key: key);
+
+
+  const AuthenticationWidget({ Key key, this.mainController, this.scaffoldContext, this.startingStep : AuthenticationStep.SERVERSELECTION}) : super(key: key);
+
   @override
   _AuthenticationWidget createState() => _AuthenticationWidget();
 }
@@ -90,17 +96,34 @@ class _AuthenticationWidget extends State<AuthenticationWidget> {
   BuildContext _scaffoldContext;
   AuthenticationStep _step;
 
-  String _server = "https://";
-  String _login = "";
-  String _password = "";
-  bool _remember = true;
+  // Credentials
+  final _serverC = TextEditingController(text: "https://");
+  final _serverFocus = FocusNode();
 
   final _loginC = TextEditingController();
-  final _passwordC = TextEditingController();
-  final _serverC = TextEditingController(text: "https://");
+  final _loginFocus = FocusNode();
 
-  final FocusNode _loginFocus = FocusNode();
-  final FocusNode _passwordFocus = FocusNode();
+  final _passwordC = TextEditingController();
+  final _passwordFocus = FocusNode();
+  bool _passCVisible = false;
+
+  // Direct Connexion
+  final _deviceIDC = TextEditingController();
+  final _deviceIDFocus = FocusNode();
+  String _protocol = "mqtts";
+  final _brokerC = TextEditingController();
+  final _brokerFocus = FocusNode();
+  final _portC = TextEditingController();
+  final _portFocus = FocusNode();
+  final _mqttLoginC = TextEditingController();
+  final _mqttLoginFocus = FocusNode();
+  final _mqttPassC = TextEditingController();
+  final _mqttPassFocus = FocusNode();
+  bool _passMVisible = false;
+  final _scopeC = TextEditingController();
+  final _scopeFocus = FocusNode();
+
+  bool _remember = true;
 
 
   void initState() {
@@ -115,16 +138,21 @@ class _AuthenticationWidget extends State<AuthenticationWidget> {
   Widget build(BuildContext context) {
     Orientation orientation = MediaQuery.of(context).orientation;
     switch(_step) {
-      case AuthenticationStep.FIRSTLAUNCH : {
+      case AuthenticationStep.WELCOME : {
         return welcomeWidget();
       }
       break;
-      case AuthenticationStep.NOTCONNECTED : {
+
+      case AuthenticationStep.DIRECTCONNECT : {
+        return directWidget();
+      }
+      break;
+      case AuthenticationStep.SERVERSELECTION : {
         return serverSelectionWidget();
       }
       break;
       // Credentials
-      case AuthenticationStep.SERVERSELECTED : {
+      case AuthenticationStep.CREDENTIALS : {
         return credentialsWidget();
 
       }
@@ -140,11 +168,12 @@ class _AuthenticationWidget extends State<AuthenticationWidget> {
   Widget serverSelectionWidget() {
     return Expanded(
       child: Column(
+        mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: <Widget>[
           Spacer(),
           Expanded(
-            child: AutoSizeText("Please enter the authentication server.",
-              style: TextStyle(fontSize: 40), maxLines: 2,),
+            child: AutoSizeText("Connect to the application server",
+              style: TextStyle(fontSize: 25), maxLines: 2, textAlign: TextAlign.center,),
             flex: 1,
           ),
           Expanded(
@@ -152,12 +181,14 @@ class _AuthenticationWidget extends State<AuthenticationWidget> {
               key :_formKey,
               child: TextFormField(
                 controller: _serverC,
+                focusNode: _serverFocus,
+                inputFormatters: [WhitelistingTextInputFormatter(RegExp(r'[a-zA-Z0-9.://]'))],
                 decoration: InputDecoration(
-                    labelText: 'Server'
+                    labelText: ''
                 ),
                 validator: (value)  {
-                  if (value.isEmpty) {
-                    return 'Please enter login';
+                  if (value.isEmpty || value == "https://") {
+                    return 'Please enter server url';
                   }
                   return null;
                 },
@@ -170,18 +201,43 @@ class _AuthenticationWidget extends State<AuthenticationWidget> {
             ),
             flex: 2,
           ),
-          RaisedButton(
-            color: Color.fromRGBO(60, 187, 242, 0.9),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: <Widget>[
-                Icon(Icons.input, color: Colors.white,),
-                Text("Check Server", style: TextStyle(fontSize: 20, color: Colors.white),),
-              ],
-            ),
-            onPressed: () {requestServerRoutes(_scaffoldContext, _serverC.value.text);},
-          ),
 
+          Spacer(),
+
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: <Widget>[
+              RaisedButton(
+                color: Color.fromRGBO(60, 187, 242, 0.9),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: <Widget>[
+                    Icon(Icons.input, color: Colors.white,),
+                    Text("  OK  ", style: TextStyle(fontSize: 20, color: Colors.white),),
+                  ],
+                ),
+                onPressed: () {requestServerRoutes(_scaffoldContext, _serverC.value.text);},
+              ),
+
+            ],
+          ),
+          Spacer(),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: <Widget>[
+              RichText(
+                text: TextSpan(
+                    text: "More options",
+                    style: TextStyle(color: Colors.blue, fontSize: 20, decoration: TextDecoration.underline),
+                    recognizer: TapGestureRecognizer()..onTap = () {
+                      setState(() {
+                        _step = AuthenticationStep.DIRECTCONNECT;
+                      });
+                    }
+                ),
+              ),
+            ],
+          ),
           Spacer()
         ],
       ),
@@ -204,6 +260,7 @@ class _AuthenticationWidget extends State<AuthenticationWidget> {
                       decoration: InputDecoration(
                           labelText: 'Login :'
                       ),
+                      inputFormatters: [WhitelistingTextInputFormatter(RegExp(r'[a-zA-Z0-9@\-.]'))],
                       validator: (value)  {
                         if (value.isEmpty) {
                           return 'Please enter login';
@@ -221,7 +278,16 @@ class _AuthenticationWidget extends State<AuthenticationWidget> {
                     TextFormField(
                       decoration: InputDecoration(
                         labelText: 'Password',
-
+                          suffixIcon: IconButton(
+                            icon: Icon(
+                              _passCVisible ? Icons.visibility : Icons.visibility_off,
+                            ),
+                            onPressed: () {
+                              setState(() {
+                                _passCVisible = !_passCVisible;
+                              });
+                            },
+                          )
                       ),
                       validator: (value)  {
                         if (value.isEmpty) {
@@ -230,7 +296,7 @@ class _AuthenticationWidget extends State<AuthenticationWidget> {
                         return null;
                       },
                       controller: _passwordC,
-                      obscureText: true,
+                      obscureText: !_passCVisible,
                       focusNode: _passwordFocus,
                       textInputAction: TextInputAction.done,
                       onFieldSubmitted: (term) {
@@ -251,21 +317,36 @@ class _AuthenticationWidget extends State<AuthenticationWidget> {
                           controlAffinity: ListTileControlAffinity.leading
                       ),
                     ),
-                    RaisedButton(
-                      color: Color.fromRGBO(60, 187, 242, 0.9),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                        children: <Widget>[
-                          Icon(Icons.input, color: Colors.white,),
-                          Text("LOGIN", style: TextStyle(fontSize: 20, color: Colors.white),),
-                        ],
-                      ),
-                      onPressed: () {
-                        if (_loginC.value.text.isNotEmpty && _passwordC.value.text.isNotEmpty) {
-                          authenticate(_scaffoldContext, _loginC.value.text, _passwordC.value.text);
-                        }
-                      },
-                    ),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: <Widget>[
+                        RaisedButton(
+                          color: Color.fromRGBO(60, 187, 242, 0.9),
+                          child: Icon(Icons.arrow_back, color: Colors.white,),
+                          onPressed: () {
+                            setState(() {
+                              _step = AuthenticationStep.SERVERSELECTION;
+                            });
+                          },
+                        ),
+                        RaisedButton(
+                          color: Color.fromRGBO(60, 187, 242, 0.9),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                            children: <Widget>[
+                              Icon(Icons.input, color: Colors.white,),
+                              Text("LOGIN", style: TextStyle(fontSize: 20, color: Colors.white),),
+                            ],
+                          ),
+                          onPressed: () {
+                            if (_loginC.value.text.isNotEmpty && _passwordC.value.text.isNotEmpty) {
+                              authenticate(_scaffoldContext, _loginC.value.text, _passwordC.value.text);
+                            }
+                          },
+                        ),
+                      ],
+                    )
+
                   ],
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 ),
@@ -280,53 +361,273 @@ class _AuthenticationWidget extends State<AuthenticationWidget> {
   Widget welcomeWidget() {
     return Expanded(
       child: Column(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: <Widget>[
           Spacer(),
           Expanded(
-            child: AutoSizeText("Welcome ! To get started with LinTO press the setup button.",
-              style: TextStyle(fontSize: 40), maxLines: 2,),
+            child: AutoSizeText("Welcome,",
+              style: TextStyle(fontSize: 40), maxLines: 2, textAlign: TextAlign.center,),
+            flex: 1,
+          ),
+          Expanded(
+            child: AutoSizeText("We will guide you through the setup of your smart assistant.",
+              style: TextStyle(fontSize: 30), maxLines: 2, textAlign: TextAlign.center,),
             flex: 1,
           ),
 
-            RaisedButton(
-              color: Color.fromRGBO(60, 187, 242, 0.9),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: <Widget>[
-                  Icon(Icons.settings, color: Colors.white,),
-                  Text("Setup LinTO", style: TextStyle(fontSize: 30),),
-                ],
-              ),
-              onPressed: () async {
-                if (! await _mainController.requestPermissions()) {
-                  displaySnackMessage(context, "Permissions missing");
-                  return;
-                }
-                setState(() {
-                  _step = AuthenticationStep.NOTCONNECTED;
-                });
-              },
+          RaisedButton(
+            color: Color.fromRGBO(60, 187, 242, 0.9),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: <Widget>[
+                Icon(Icons.settings, color: Colors.white,),
+                AutoSizeText("Get started",
+                  style: TextStyle(fontSize: 25), maxLines: 2, textAlign: TextAlign.center,)
+              ],
             ),
-            Spacer()
-            //flex: 2,
+            onPressed: () async {
+              if (! await _mainController.requestPermissions()) {
+                displaySnackMessage(context, "Permissions missing");
+                return;
+              }
+              setState(() {
+                _step = AuthenticationStep.SERVERSELECTION;
+              });
+            },
+          ),
 
+            Spacer()
         ],
       ),
     );
   }
 
+  Widget directWidget() {
+    return Expanded(
+        child: Form(
+          key: _formKey,
+          child: ListView(
+            children: <Widget>[
+              AutoSizeText("Directly connect to your single application.",
+                style: TextStyle(fontSize: 20), maxLines: 2, textAlign: TextAlign.center,),
+              TextFormField(
+                decoration: InputDecoration(
+                    labelText: 'This device identifies as (unique ID):'
+                ),
+                inputFormatters: [WhitelistingTextInputFormatter(RegExp(r'[a-zA-Z0-9\-.@]'))],
+                validator: (value)  {
+                  if (value.isEmpty) {
+                    return 'Please enter a SN';
+                  }
+                  return null;
+                },
+                controller: _deviceIDC,
+                textInputAction: TextInputAction.next,
+                focusNode: _deviceIDFocus,
+                onFieldSubmitted: (term) {
+                  _deviceIDFocus.unfocus();
+                  FocusScope.of(context).requestFocus(_brokerFocus);
+                },
+              ),
+              Row(
+                children : [
+                  Flexible(
+                    flex: 5,
+                    child: DropdownButtonFormField<String>(
+                      decoration: InputDecoration(
+                        isDense: true,
+                        hasFloatingPlaceholder: true,
+                        alignLabelWithHint: true,
+                        border: InputBorder.none,
+                      ),
+                      value: _protocol,
+                      items: <String>['mqtt', 'mqtts'].map((String value) {
+                        return new DropdownMenuItem(
+                            value: value,
+                            child: new Text(value)
+                        );
+                      }).toList(),
+                      onChanged: (value) {
+                        setState(() {
+                          _protocol = value;
+                        });
+                      },
+                    ),
+                  ),
+                  Flexible(
+                    child: TextFormField(
+                      decoration: InputDecoration(
+                          labelText: 'Connexion server'
+                      ),
+                      inputFormatters: [WhitelistingTextInputFormatter(RegExp(r'[a-zA-Z0-9:\-.@]'))],
+                      validator: (value)  {
+                        if (value.isEmpty) {
+                          return 'Please enter url';
+                        }
+                        return null;
+                      },
+                      controller: _brokerC,
+                      textInputAction: TextInputAction.next,
+                      focusNode: _brokerFocus,
+                      onFieldSubmitted: (term) {
+                        _serverFocus.unfocus();
+                        FocusScope.of(context).requestFocus(_portFocus);
+                      },
+                    ),
+                    flex: 12,
+                  ),
+                  Spacer(
+                    flex: 1,
+                  ),
+                  Flexible(
+                    child: TextFormField(
+                      decoration: InputDecoration(
+                          labelText: "port"
+                      ),
+                      controller: _portC,
+                      focusNode: _portFocus,
+                      inputFormatters: [WhitelistingTextInputFormatter.digitsOnly],
+                      keyboardType: TextInputType.number,
+                      onFieldSubmitted: (term) {
+                        _portFocus.unfocus();
+                        FocusScope.of(context).requestFocus(_mqttLoginFocus);
+                      },
+                    ),
+                    flex: 4
+                  ),
+                ]
+              ),
+
+              TextFormField(
+                decoration: InputDecoration(
+                  labelText: 'MQTT Login',
+
+                ),
+                inputFormatters: [WhitelistingTextInputFormatter(RegExp(r'[a-zA-Z0-9:\-.@]'))],
+                validator: (value)  {
+                  if (value.isEmpty) {
+                    return 'Please enter password';
+                  }
+                  return null;
+                },
+                controller: _mqttLoginC,
+                focusNode: _mqttLoginFocus,
+                textInputAction: TextInputAction.next,
+                onFieldSubmitted: (term) {
+                  _mqttLoginFocus.unfocus();
+                  FocusScope.of(context).requestFocus(_mqttPassFocus);
+
+                },
+              ),
+              TextFormField(
+                decoration: InputDecoration(
+                  labelText: 'MQTT Password',
+                  suffixIcon: IconButton(
+                    icon: Icon(
+                      _passMVisible ? Icons.visibility : Icons.visibility_off,
+                    ),
+                    onPressed: () {
+                      setState(() {
+                        _passMVisible = !_passMVisible;
+                      });
+                    },
+                  )
+                ),
+                validator: (value)  {
+                  if (value.isEmpty) {
+                    return 'Please enter password';
+                  }
+                  return null;
+                },
+                controller: _mqttPassC,
+                obscureText: !_passMVisible,
+                focusNode: _mqttPassFocus,
+                textInputAction: TextInputAction.next,
+                onFieldSubmitted: (term) {
+                  _mqttPassFocus.unfocus();
+                  FocusScope.of(context).requestFocus(_scopeFocus);
+                },
+              ),
+              TextFormField(
+                decoration: InputDecoration(
+                  labelText: 'Application ID',
+                ),
+                inputFormatters: [WhitelistingTextInputFormatter(RegExp(r'[a-zA-Z0-9:\-.@]'))],
+                validator: (value)  {
+                  if (value.isEmpty) {
+                    return 'Please enter password';
+                  }
+                  return null;
+                },
+                controller: _scopeC,
+                focusNode: _scopeFocus,
+                textInputAction: TextInputAction.done,
+                onFieldSubmitted: (term) {
+                  SystemChannels.textInput.invokeMethod('TextInput.hide');
+                },
+              ),
+              StatefulBuilder(
+                builder: (context, _setState) => CheckboxListTile(
+                    title: Text("Remember me"),
+                    value: _remember,
+                    onChanged: (bool val) {
+                      setState(() {
+                        _remember = val;
+                      });
+                    },
+                    controlAffinity: ListTileControlAffinity.leading
+                ),
+              ),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: <Widget>[
+                  RaisedButton(
+                    color: Color.fromRGBO(60, 187, 242, 0.9),
+                    child: Icon(Icons.arrow_back, color: Colors.white,),
+                    onPressed: () {
+                      setState(() {
+                        _step = AuthenticationStep.SERVERSELECTION;
+                      });
+                    },
+                  ),
+                  RaisedButton(
+                    color: Color.fromRGBO(60, 187, 242, 0.9),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: <Widget>[
+                        Icon(Icons.input, color: Colors.white,),
+                        Text("     Connect     ", style: TextStyle(fontSize: 20, color: Colors.white),),
+                      ],
+                    ),
+                    onPressed: () {
+                      directConnect(_scaffoldContext);
+                    },
+                  ),
+
+                ],
+              ),
+            ],
+            //mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          ),
+        )
+    );
+  }
+
   void loadUserPref() {
     if (_mainController.userPreferences.clientPreferences['keep_info']) {
+      var prefs = _mainController.userPreferences.clientPreferences;
       setState(() {
-        _server =
-        _mainController.userPreferences.clientPreferences['last_server'];
-        _login =
-        _mainController.userPreferences.clientPreferences['last_login'];
-        _password =
-        _mainController.userPreferences.clientPreferences['last_password'];
-        _serverC.text = _server;
-        _loginC.text = _login;
-        _passwordC.text = _password;
+        _serverC.text = prefs["credentials"]["last_server"];
+        _loginC.text = prefs["credetials"]["last_login"];
+        _passwordC.text = _mainController.userPreferences.passwordC;
+
+        _deviceIDC.text = prefs["direct"]["serial_number"];
+        _brokerC.text = prefs["direct"]["broker_ip"];
+        _portC.text = prefs["direct"]["broker_port"];
+        _mqttLoginC.text = prefs["direct"]["broker_id"];
+        _mqttPassC.text = _mainController.userPreferences.passwordM;
+        _scopeC.text = prefs["direct"]["scope"];
+
       });
     }
   }
@@ -346,19 +647,35 @@ class _AuthenticationWidget extends State<AuthenticationWidget> {
       _mainController.client.setAuthRoute(selected);
     }
     setState(() {
-      _step = AuthenticationStep.SERVERSELECTED;
+      _step = AuthenticationStep.CREDENTIALS;
     });
   }
 
   /// Update connexion information.
+
   void updateConnPrefs() {
-    _mainController.userPreferences.clientPreferences['first_login'] = false;
-    _mainController.userPreferences.clientPreferences['keep_info'] = _remember;
-    _mainController.userPreferences.clientPreferences['last_server'] = _serverC.text.trim();
-    _mainController.userPreferences.clientPreferences['last_route'] = _mainController.client.authRoute;
-    _mainController.userPreferences.clientPreferences['last_login'] = _loginC.text.trim();
-    _mainController.userPreferences.clientPreferences['last_password'] = _passwordC.text.trim();
-    _mainController.userPreferences.clientPreferences['last_scope'] = _mainController.client.currentScope;
+    var prefs = _mainController.userPreferences.clientPreferences;
+    prefs["first_login"] = false;
+    prefs["keep_info"] = _remember;
+    if(_step == AuthenticationStep.CREDENTIALS)  {
+      prefs["auth_cred"] = true;
+      var credPrefs = prefs["credentials"];
+      credPrefs["last_server"] = _serverC.text;
+      credPrefs["last_login"] = _loginC.text;
+      credPrefs["last_route"] = _mainController.client.authRoute;
+      credPrefs["last_scope"] = _mainController.client.currentScope;
+      _mainController.userPreferences.updatePasswordC(_passwordC.value.text);
+    } else {
+      prefs["auth_cred"] = false;
+      var dirPrefs = prefs["direct"];
+      dirPrefs["serial_number"] = _deviceIDC.text;
+      dirPrefs["broker_ip"] = _brokerC.text;
+      dirPrefs["broker_port"] = _portC.text;
+      dirPrefs["broker_id"] = _mqttLoginC.text;
+      dirPrefs["scope"] = _scopeC.text;
+      _mainController.userPreferences.updatePasswordM(_passwordC.value.text);
+    }
+
     _mainController.userPreferences.updatePrefs();
   }
 
@@ -405,5 +722,24 @@ class _AuthenticationWidget extends State<AuthenticationWidget> {
       backgroundColor: isError ? Colors.red : Color(0x3db5e4),
     );
     Scaffold.of(context).showSnackBar(snackBarError);
+  }
+
+  Future<void> directConnect(BuildContext scaffoldContext) async{
+    SystemChannels.textInput.invokeMethod('TextInput.hide');
+
+    bool res = await _mainController.client.directConnexion(_brokerC.value.text,
+                                                            _portC.value.text,
+                                                            _mqttLoginC.value.text,
+                                                            _mqttPassC.value.text,
+                                                            _deviceIDC.value.text,
+                                                            _scopeC.value.text,
+                                                            _protocol == "mqtts");
+    if (!res) {
+      displaySnackMessage(context, "Could not connect to broker using those informations.", isError: true);
+    } else {
+      updateConnPrefs();
+      Navigator.push(context, MaterialPageRoute(builder: (context) => MainInterface(mainController: _mainController,)));
+    }
+
   }
 }

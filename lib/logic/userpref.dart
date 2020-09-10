@@ -7,13 +7,15 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 const String PREFFILE = "userpref.json";
 const String TEMPLATEPATH = "assets/config/userpref.json";
-const String KEYSTOREPASSKEY = "linto_local_password";
+const String KEYSTOREPASSKEYC = "linto_cred_password";
+const String KEYSTOREPASSKEYM = "linto_mqtt_password";
 
 /// User preferences holds client and system preference and allows them to persist between sessions.
 class UserPreferences {
   Map<String, dynamic> clientPreferences;
   Map<String, dynamic> systemPreferences;
-  String password;
+  String passwordC;
+  String passwordM;
 
   File prefFile;
 
@@ -55,10 +57,12 @@ class UserPreferences {
     var preferences = jsonDecode(prefContent);
     clientPreferences = preferences["client"];
     try {
-      password = await storage.read(key: KEYSTOREPASSKEY);
+      passwordC = await storage.read(key: KEYSTOREPASSKEYC);
+      passwordM = await storage.read(key: KEYSTOREPASSKEYM);
     } on Exception catch(error) {
       print(error);
-      password = "";
+      passwordC = "";
+      passwordM = "";
     }
     systemPreferences = preferences["system"];
     print('User preferences loaded.');
@@ -71,9 +75,14 @@ class UserPreferences {
     await prefFile.writeAsString(serialized);
   }
 
+  void updatePasswordC(String password) async {
+    this.passwordC = password;
+    storage.write(key: KEYSTOREPASSKEYC, value: password);
+  }
 
-  void updatePassword(String password) async {
-    storage.write(key: KEYSTOREPASSKEY, value: password);
+  void updatePasswordM(String password) async {
+    this.passwordM = password;
+    storage.write(key: KEYSTOREPASSKEYM, value: password);
   }
 
   /// Write current user preferences to the local preferences file.

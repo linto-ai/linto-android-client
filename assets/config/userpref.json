@@ -2,11 +2,20 @@
   "client": {
     "first_login" : true,
     "keep_info" : false,
-    "last_server" : "https://stage.linto.ai",
-    "last_route" : "",
-    "last_login" : "",
-    "last_password" : "",
-    "last_scope" : ""
+    "auth_cred" : true,
+    "credentials" : {
+      "last_server" : "https://stage.linto.ai",
+      "last_route" : "",
+      "last_login" : "",
+      "last_scope" : ""
+    },
+    "direct" : {
+      "serial_number" : "",
+      "broker_ip" : "",
+      "broker_port" : "",
+      "broker_id" : "",
+      "scope" : ""
+    }
   },
   "system": {
     "notificationVolume" : 1.0,

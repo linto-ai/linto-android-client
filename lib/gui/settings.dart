@@ -190,10 +190,21 @@ class _OptionInterface extends State<OptionInterface> {
   }
 
 Container sysInfo(MainController controller) {
-  Map<String, String> entryKeys = {
-    'Login': controller.client.login,
-    'Server': controller.client.server,
-    'Scope' : controller.client.currentScope};
+  Map<String, String> entryKeys;
+  if (controller.userPreferences.clientPreferences["auth_cred"]) {
+    entryKeys = {
+      'Login': controller.client.login,
+      'Server': controller.client.server,
+      'Scope' : controller.client.currentScope
+    };
+  } else {
+    entryKeys = {
+      'Id' : controller.client.deviceID,
+      'Broker': controller.client.brokerURL,
+      'Scope' : controller.client.currentScope
+    };
+  }
+
 
   return Container(
     child: Column(

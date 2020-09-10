@@ -5,11 +5,13 @@ import 'package:flutter/services.dart' show rootBundle;
 import 'package:http/http.dart' as http;
 import 'package:linto_flutter_client/client/mqttClientWrapper.dart';
 import 'package:linto_flutter_client/logic/customtypes.dart';
+import 'package:linto_flutter_client/logic/userpref.dart';
 
 enum AuthenticationStep{
-  FIRSTLAUNCH,
-  NOTCONNECTED,
-  SERVERSELECTED,
+  WELCOME,
+  DIRECTCONNECT,
+  SERVERSELECTION,
+  CREDENTIALS,
   AUTHENTICATED,
   CONNECTED
 }
@@ -66,6 +68,14 @@ class LinTOClient {
 
   Map<String, dynamic> get authRoute {
     return _authRoute;
+  }
+
+  String get brokerURL {
+    return "$_mqttHost:$_mqttPort";
+  }
+
+  String get deviceID {
+    return _sessionID;
   }
 
   set onMQTTMsg(MQTTMessageCallback cb) {
@@ -261,25 +271,30 @@ class LinTOClient {
     return _authentificated;
   }
 
-  Future<AuthenticationStep> reconnect(String server, String login, String password, Map<String, dynamic> route, String scope) async {
+  Future<AuthenticationStep> reconnect(UserPreferences userPrefs) async {
     disconnect();
-    AuthenticationStep step = AuthenticationStep.NOTCONNECTED;
-    List<dynamic> routes = await requestRoutes(server);
+    return userPrefs.clientPreferences["auth_cred"] ? credentialReconnect(userPrefs) : directReconnect(userPrefs);
+  }
+
+  Future<AuthenticationStep> credentialReconnect(UserPreferences userPrefs) async {
+    AuthenticationStep step = AuthenticationStep.SERVERSELECTION;
+    var prefs = userPrefs.clientPreferences["credentials"];
+    List<dynamic> routes;
     try {
-      routes = await requestRoutes(server);
+      routes = await requestRoutes(prefs["last_server"]);
     } on ClientErrorException catch(error) {
       return step;
     }
 
-    if (routes.map((e) => e['basePath']).contains(route['basePath'])){
-      setAuthRoute(route);
-      step = AuthenticationStep.SERVERSELECTED;
+    if (routes.map((e) => e['basePath']).contains(prefs["last_route"]['basePath'])){
+      setAuthRoute(prefs["last_route"]);
+      step = AuthenticationStep.CREDENTIALS;
     } else {
       return step;
     }
 
     try {
-      await requestAuthentification(login, password);
+      await requestAuthentification(prefs["last_login"], userPrefs.passwordC);
     } on ClientErrorException catch(error) {
       return step;
     }
@@ -293,15 +308,28 @@ class LinTOClient {
 
     step = AuthenticationStep.AUTHENTICATED;
 
-    if ( ! scopes.map((e) => e['topic']).contains(scope)){
+    if ( ! scopes.map((e) => e['topic']).contains(prefs["last_scope"])){
       return step;
     }
 
-    var success = await setScope(scope);
+    var success = await setScope(prefs["last_scope"]);
     if (!success) {
       return step;
     }
     return AuthenticationStep.CONNECTED;
+  }
+
+
+  Future<AuthenticationStep> directReconnect(UserPreferences userPrefs) async {
+    var prefs = userPrefs.clientPreferences["direct"];
+    bool res = await directConnexion(prefs["broker_ip"], prefs["broker_port"], prefs["broker_id"], userPrefs.passwordM, prefs["serial_number"], prefs["scope"], true);
+    if (res) {
+      _selectedScope = prefs["scope"];
+      _sessionID = prefs["serial_number"];
+      return AuthenticationStep.CONNECTED;
+    } else {
+      return AuthenticationStep.DIRECTCONNECT;
+    }
   }
 
   void connectToBroker() async {
@@ -318,6 +346,21 @@ class LinTOClient {
     message['auth_token'] = "Android ${_token}";
     mqttClient.publish("$_publishingTopic$subTopic", message);
     print("Send message on $_publishingTopic$subTopic");
+  }
+
+  /// Direct connexion to the broker
+  Future<bool> directConnexion(String broker, String port, String login, String password, String id, String scope, bool useLogin) async {
+    _sessionID = id;
+    _mqttUseLogin = useLogin;
+    _mqttHost = broker;
+    _mqttPort = port;
+    _mqttPassword = password;
+    _mqttLogin = login;
+    _publishingTopic = "$scope$MQTTEGRESS/$id";
+    _subscribingTopic = "$scope$MQTTINGRESS/$id";
+    _selectedScope = scope;
+    await this.connectToBroker();
+    return mqttClient.connectionState == MQTTCurrentConnectionState.CONNECTED;
   }
 
   void requestNewToken() {

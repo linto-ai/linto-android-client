@@ -22,10 +22,16 @@ class _Home extends State<Home> {
   // Note: This is a `GlobalKey<FormState>`,
   // not a GlobalKey<MyCustomFormState>
   MainController _mainController;
+  bool _visible = false;
   void initState() {
     super.initState();
     _mainController = widget.mainController;
-    WidgetsBinding.instance.addPostFrameCallback((_) async =>  startup());
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      //startup();
+      setState(() {
+        _visible = true;
+      });
+    });
   }
 
   @override
@@ -43,7 +49,12 @@ class _Home extends State<Home> {
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             direction: orientation == Orientation.portrait ? Axis.vertical : Axis.horizontal,
             children: <Widget>[
-              Image.asset('assets/icons/linto_ai.png',height: lintoWidth, fit: BoxFit.contain),
+              AnimatedOpacity(
+                opacity: _visible ? 1.0 : 0.0,
+                duration: Duration(milliseconds: 2000),
+                child: Image.asset('assets/icons/linto_ai.png',height: lintoWidth, fit: BoxFit.contain),
+                onEnd: () async => startup(),
+              )
             ],
           )
         )
@@ -52,28 +63,28 @@ class _Home extends State<Home> {
 
   Future startup() async {
     var clientPrefs;
-    AuthenticationStep resultStep = AuthenticationStep.NOTCONNECTED;
+    AuthenticationStep resultStep = AuthenticationStep.WELCOME;
     _mainController.userPreferences.init().whenComplete(() async {
       clientPrefs = _mainController.userPreferences.clientPreferences;
-      print(_mainController.userPreferences);
+      //print(_mainController.userPreferences);
       if (clientPrefs['first_login']) {
         Navigator.push(context, MaterialPageRoute(builder: (context) =>
             Login(mainController: _mainController,
-              step: AuthenticationStep.FIRSTLAUNCH,)));
+              step: AuthenticationStep.WELCOME,)));
         return;
       } else if (!clientPrefs['keep_info']){
         await Navigator.push(context, MaterialPageRoute(builder: (context) =>
             Login(mainController: _mainController,
-              step: AuthenticationStep.NOTCONNECTED,)));
+              step: AuthenticationStep.SERVERSELECTION,)));
       } else {
         try {
           resultStep = await _mainController.client
-              .reconnect(clientPrefs["last_server"], clientPrefs["last_login"], clientPrefs["last_password"], clientPrefs["last_route"], clientPrefs["last_scope"]);
+              .reconnect(_mainController.userPreferences);
           // success -> main interface
           // Failure -> login - step
         } on Exception catch(error) {
           print(error);
-          Navigator.push(context, MaterialPageRoute(builder: (context) => Login(mainController: _mainController,)));
+          Navigator.push(context, MaterialPageRoute(builder: (context) => Login(mainController: _mainController,step: AuthenticationStep.SERVERSELECTION,)));
         }
 
         if (resultStep == AuthenticationStep.CONNECTED) {
@@ -83,7 +94,7 @@ class _Home extends State<Home> {
         }
       }
       while (true) {
-        Navigator.push(context, MaterialPageRoute(builder: (context) => Login(mainController: _mainController, step: AuthenticationStep.NOTCONNECTED)));
+        await Navigator.push(context, MaterialPageRoute(builder: (context) => Login(mainController: _mainController, step: AuthenticationStep.SERVERSELECTION)));
       }
     });
   }

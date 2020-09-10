@@ -37,7 +37,7 @@ class MQTTClientWrapper {
     _onError = onError;
   }
 
-  void setupClient(String serverURI, String serverPort, String name,  String topic,{bool usesLogin: false, String login : "", String password : ""}) async {
+  Future<void> setupClient(String serverURI, String serverPort, String name, String topic,{bool usesLogin: false, String login : "", String password : ""}) async {
       client = MqttServerClient.withPort(serverURI, name, int.parse(serverPort));
       client.onDisconnected = _onDisconnect;
       client.onConnected = () => _onConnect("$topic/status");

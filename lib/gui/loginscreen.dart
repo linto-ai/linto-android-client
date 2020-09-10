@@ -187,5 +187,4 @@ class LoginScreenForm extends State<LoginScreen> {
     );
     Scaffold.of(context).showSnackBar(snackBarError);
   }
-  
 }
