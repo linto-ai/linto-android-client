@@ -40,6 +40,7 @@ class _SlidingPanel extends State<SlidingPanel> {
   void displayLoadingAnimation() {
     setState(() {
       _loadingDisplay = true;
+      _displayedText = "";
     });
 
   }

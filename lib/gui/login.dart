@@ -96,6 +96,11 @@ class _AuthenticationWidget extends State<AuthenticationWidget> {
   BuildContext _scaffoldContext;
   AuthenticationStep _step;
 
+  // Welcome controller
+  var _welcomeVisible = false;
+  var _welcomeTextVisible = false;
+  var _buttonVisible = false;
+
   // Credentials
   final _serverC = TextEditingController(text: "https://");
   final _serverFocus = FocusNode();
@@ -130,16 +135,22 @@ class _AuthenticationWidget extends State<AuthenticationWidget> {
     super.initState();
     _mainController = widget.mainController;
     _scaffoldContext = widget.scaffoldContext;
-    WidgetsBinding.instance.addPostFrameCallback((_) =>loadUserPref());
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      loadUserPref();
+      setState(() {
+        _welcomeVisible = true;
+      });
+    });
     _step = widget.startingStep;
   }
 
   @override
   Widget build(BuildContext context) {
     Orientation orientation = MediaQuery.of(context).orientation;
+    //_step = AuthenticationStep.WELCOME;
     switch(_step) {
       case AuthenticationStep.WELCOME : {
-        return welcomeWidget();
+        return welcomeWidget(context);
       }
       break;
 
@@ -358,45 +369,71 @@ class _AuthenticationWidget extends State<AuthenticationWidget> {
     );
   }
 
-  Widget welcomeWidget() {
+  Widget welcomeWidget(BuildContext context) {
+    var width = MediaQuery.of(context).size.width * 0.6;
     return Expanded(
       child: Column(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: <Widget>[
           Spacer(),
           Expanded(
-            child: AutoSizeText("Welcome,",
-              style: TextStyle(fontSize: 40), maxLines: 2, textAlign: TextAlign.center,),
-            flex: 1,
+              child:  AnimatedOpacity(
+                opacity: _welcomeVisible ? 1.0 : 0.0,
+                duration: Duration(seconds: 3),
+                onEnd: () {
+                  setState(() {
+                    _welcomeTextVisible = true;
+                  });
+                },
+                child: AutoSizeText("Welcome, ",
+                  style: TextStyle(fontSize: 40), maxLines: 2, textAlign: TextAlign.center,),
+              ),
+              flex: 1
           ),
           Expanded(
-            child: AutoSizeText("We will guide you through the setup of your smart assistant.",
-              style: TextStyle(fontSize: 30), maxLines: 2, textAlign: TextAlign.center,),
+            child:  AnimatedOpacity(
+              opacity: _welcomeTextVisible ? 1.0 : 0.0,
+              duration: Duration(seconds: 2),
+              onEnd: () {
+                setState(() {
+                  _buttonVisible = true;
+                });
+              },
+              child: AutoSizeText("We will guide you through the setup of your smart assistant.",
+                style: TextStyle(fontSize: 25), maxLines: 2, textAlign: TextAlign.center,),
+            ),
             flex: 1,
           ),
 
-          RaisedButton(
-            color: Color.fromRGBO(60, 187, 242, 0.9),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: <Widget>[
-                Icon(Icons.settings, color: Colors.white,),
-                AutoSizeText("Get started",
-                  style: TextStyle(fontSize: 25), maxLines: 2, textAlign: TextAlign.center,)
-              ],
+          Container(
+            width: width,
+            child: AnimatedOpacity(
+              opacity: _buttonVisible ? 1.0 : 0.0,
+              duration: Duration(seconds: 2),
+              child: RaisedButton(
+                color: Color.fromRGBO(60, 187, 242, 0.9),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: <Widget>[
+                    Icon(Icons.settings, color: Colors.white,),
+                    AutoSizeText("Get started",
+                      style: TextStyle(fontSize: 25), maxLines: 2, textAlign: TextAlign.center,)
+                  ],
+                ),
+                onPressed: () async {
+                  if (! await _mainController.requestPermissions()) {
+                    displaySnackMessage(context, "Permissions missing");
+                    return;
+                  }
+                  setState(() {
+                    _step = AuthenticationStep.SERVERSELECTION;
+                  });
+                },
+              ),
             ),
-            onPressed: () async {
-              if (! await _mainController.requestPermissions()) {
-                displaySnackMessage(context, "Permissions missing");
-                return;
-              }
-              setState(() {
-                _step = AuthenticationStep.SERVERSELECTION;
-              });
-            },
           ),
 
-            Spacer()
+          Spacer()
         ],
       ),
     );
@@ -618,7 +655,7 @@ class _AuthenticationWidget extends State<AuthenticationWidget> {
       var prefs = _mainController.userPreferences.clientPreferences;
       setState(() {
         _serverC.text = prefs["credentials"]["last_server"];
-        _loginC.text = prefs["credetials"]["last_login"];
+        _loginC.text = prefs["credentials"]["last_login"];
         _passwordC.text = _mainController.userPreferences.passwordC;
 
         _deviceIDC.text = prefs["direct"]["serial_number"];
@@ -627,7 +664,6 @@ class _AuthenticationWidget extends State<AuthenticationWidget> {
         _mqttLoginC.text = prefs["direct"]["broker_id"];
         _mqttPassC.text = _mainController.userPreferences.passwordM;
         _scopeC.text = prefs["direct"]["scope"];
-
       });
     }
   }
@@ -657,13 +693,14 @@ class _AuthenticationWidget extends State<AuthenticationWidget> {
     var prefs = _mainController.userPreferences.clientPreferences;
     prefs["first_login"] = false;
     prefs["keep_info"] = _remember;
+    prefs["reconnect"] = true;
     if(_step == AuthenticationStep.CREDENTIALS)  {
       prefs["auth_cred"] = true;
       var credPrefs = prefs["credentials"];
       credPrefs["last_server"] = _serverC.text;
       credPrefs["last_login"] = _loginC.text;
       credPrefs["last_route"] = _mainController.client.authRoute;
-      credPrefs["last_scope"] = _mainController.client.currentScope;
+      credPrefs["last_scope"] = _mainController.client.currentScope.topic;
       _mainController.userPreferences.updatePasswordC(_passwordC.value.text);
     } else {
       prefs["auth_cred"] = false;

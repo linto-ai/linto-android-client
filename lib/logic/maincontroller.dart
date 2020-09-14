@@ -37,6 +37,7 @@ class MainController {
   /// Stop client session
   void disconnect() {
     // Disconnect from broker
+    userPreferences.clientPreferences["reconnect"] = false;
     client.disconnect();
     // Cut Audio
     audioManager.stopDetecting();
@@ -87,6 +88,9 @@ class MainController {
   }
 
   void _resolveBehaviors(Map<String, dynamic> behaviors) {
+    if (!{"say", "ask", "display"}.any(behaviors.keys.contains)) {
+      currentUI.onError("Failed to interpret server response.");
+    }
     if (behaviors.keys.contains("say")) {
       say(behaviors["say"]["text"], currentUI.onLintoSpeakingStop);
       currentUI.onMessage(behaviors["say"]["text"]);

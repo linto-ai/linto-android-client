@@ -23,6 +23,11 @@ class VoiceUIController{
   }
 
   /// CLIENT RELATED
+
+  void onError(String errorMessage) {
+    print("An error occured");
+  }
+
   void onRequestPending() {
     print('Request pending');
   }

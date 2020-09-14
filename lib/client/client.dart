@@ -31,7 +31,7 @@ class LinTOClient {
   String _refreshToken;
   // TODO expiring time
   String _authServURI;
-  String _selectedScope;
+
   String _login;
   String _password;
   String _mqttHost;
@@ -42,6 +42,9 @@ class LinTOClient {
   String _subscribingTopic;
   String _publishingTopic;
   String _sessionID;
+
+  List<ApplicationScope> scopes; // List available scopes
+  ApplicationScope _selectedScope;
 
   List<dynamic>  _authRoutes;
   Map<String, dynamic> _authRoute;
@@ -58,7 +61,7 @@ class LinTOClient {
     return _authServURI;
   }
 
-  String get currentScope {
+  ApplicationScope get currentScope {
     return _selectedScope;
   }
 
@@ -214,7 +217,7 @@ class LinTOClient {
   /// Request scopes from the server
   /// Should return an array or {topic, name, description}
   /// Throws [ClientErrorException] if an error is encountered.
-  Future<List<dynamic>> requestScopes() async {
+  Future<List<ApplicationScope>> requestScopes() async {
     print("Requesting scopes from server ...");
     Map<String, String> requestHeaders = { 'Content-type': 'application/json', 'Accept': 'application/json', 'Authorization' : 'Android $_token'};
     var response;
@@ -232,13 +235,14 @@ class LinTOClient {
         List<dynamic> res;
         try {
           res = json.decode(response.body);
+          scopes = res.map((scope){return ApplicationScope(scope["topic"], scope["name"], scope["description"]);}).toList();
         } on Exception catch (_) {
           throw ClientErrorException('0x0007');
         }
         if (res.length == 0) {
           throw ClientErrorException('0x0011');
         }
-        return res;
+        return scopes;
       }
       break;
 
@@ -260,15 +264,20 @@ class LinTOClient {
     }
   }
 
-  Future<bool> setScope(String scope) async{
+  Future<bool> setScope(ApplicationScope scope) async{
     _selectedScope = scope;
-    _publishingTopic = "$scope$MQTTEGRESS/$_sessionID";
-    _subscribingTopic = "$scope$MQTTINGRESS/$_sessionID";
+    _publishingTopic = "${scope.topic}$MQTTEGRESS/$_sessionID";
+    _subscribingTopic = "${scope.topic}$MQTTINGRESS/$_sessionID";
 
     await connectToBroker();
     _authentificated =  mqttClient.connectionState == MQTTCurrentConnectionState.CONNECTED;
 
     return _authentificated;
+  }
+
+  Future<bool> changeScope(ApplicationScope scope) async {
+    await mqttClient.disconnect();
+    await setScope(scope);
   }
 
   Future<AuthenticationStep> reconnect(UserPreferences userPrefs) async {
@@ -308,11 +317,11 @@ class LinTOClient {
 
     step = AuthenticationStep.AUTHENTICATED;
 
-    if ( ! scopes.map((e) => e['topic']).contains(prefs["last_scope"])){
+    if ( ! scopes.map((e) => e.topic).contains(prefs["last_scope"])){
       return step;
     }
 
-    var success = await setScope(prefs["last_scope"]);
+    var success = await setScope(getScopeByTopic(prefs["last_scope"]));
     if (!success) {
       return step;
     }
@@ -358,7 +367,8 @@ class LinTOClient {
     _mqttLogin = login;
     _publishingTopic = "$scope$MQTTEGRESS/$id";
     _subscribingTopic = "$scope$MQTTINGRESS/$id";
-    _selectedScope = scope;
+    _selectedScope = ApplicationScope(scope, "Direct connexion", "Direct connexion");
+    scopes = [_selectedScope];
     await this.connectToBroker();
     return mqttClient.connectionState == MQTTCurrentConnectionState.CONNECTED;
   }
@@ -392,4 +402,28 @@ class LinTOClient {
       mqttClient.disconnect();
     }
   }
+  ApplicationScope getScopeByTopic(String topic) {
+    for (ApplicationScope scope in scopes) {
+      if (scope.topic == topic) {
+        return scope;
+      }
+    }
+    return null;
+  }
+}
+
+class ApplicationScope {
+  final String topic;
+  final String name;
+  final String description;
+  ApplicationScope(this.topic, this.name, this.description);
+  Map<String, String> toMap() {
+    return {"topic" : topic, "name" : name, "description" : description};
+  }
+
+  @override
+  bool operator==(other) {
+    return other.topic == this.topic;
+  }
+
 }

@@ -26,10 +26,11 @@ class _ControlBar extends State<ControlBar> {
         .orientation;
     return Container(
       //decoration: BoxDecoration(border: Border.all(),),
-      padding: EdgeInsets.only(bottom: 20),
-      child: Row( // Landscape
+      padding: EdgeInsets.only(bottom: 20, top: 30),
+      child: Row(
+        crossAxisAlignment: orientation == Orientation.portrait ? CrossAxisAlignment.center: CrossAxisAlignment.start,
         children: <Widget>[
-          Expanded(
+          /*Expanded(
             child: FlatButton(
               child: _micStatus ? Icon(Icons.mic, size: 60,) : Icon(Icons.mic_off, size: 60),
               onPressed: () {
@@ -42,23 +43,25 @@ class _ControlBar extends State<ControlBar> {
               highlightColor: Colors.transparent,
             ),
             flex: 2,
-          ),
+          ),*/
           Spacer(),
           Expanded(
             child: FlatButton(
-              child: Image.asset('assets/icons/linto_alpha.png',height: 100, fit: BoxFit.contain),
+              child: Image.asset('assets/icons/linto_alpha.png',
+                  height: orientation == Orientation.portrait ? 80: 80,
+                  fit: BoxFit.contain),
               onPressed: () => this.widget.onLintoClicked(),
             ),
             flex: 2,
           ),
           Spacer(),
-          Expanded(
+          /*Expanded(
             child: FlatButton(
               child: Icon(Icons.settings, size: 60,),
               onPressed: () => this.widget.onSettingClicked(),
             ),
             flex: 2,
-          ),
+          ),*/
         ],
       ),
     );

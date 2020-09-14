@@ -25,18 +25,21 @@ class _Clock extends State<Clock> {
   Widget build(BuildContext context) {
     Orientation orientation = MediaQuery.of(context).orientation;
     return Container(
-      padding: EdgeInsets.all(10),
-        child: Column(
+      padding: EdgeInsets.only(top: 10, left: 10, right: 10),
+        //decoration: BoxDecoration(border: Border.all()),
+        child: Flex(
+          direction : orientation == Orientation.portrait ? Axis.vertical: Axis.horizontal,
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: <Widget>[
             Expanded(
               child: AutoSizeText(_date,
-                style: TextStyle(fontSize: 200),),
+                style: TextStyle(fontSize: 60), textAlign: TextAlign.center,),
               flex: 1,
             ),
             Expanded(
               child: AutoSizeText(_time,
-                style: TextStyle(fontSize: 200),),
-              flex: 2,
+                style: TextStyle(fontSize: 60),textAlign: TextAlign.center,),
+              flex: orientation == Orientation.portrait ? 2 : 1,
             ),
           ],
         ),

@@ -1,6 +1,7 @@
 {
   "client": {
     "first_login" : true,
+    "reconnect" : false,
     "keep_info" : false,
     "auth_cred" : true,
     "credentials" : {

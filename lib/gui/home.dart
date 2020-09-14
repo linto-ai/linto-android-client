@@ -22,15 +22,12 @@ class _Home extends State<Home> {
   // Note: This is a `GlobalKey<FormState>`,
   // not a GlobalKey<MyCustomFormState>
   MainController _mainController;
-  bool _visible = false;
+
   void initState() {
     super.initState();
     _mainController = widget.mainController;
     WidgetsBinding.instance.addPostFrameCallback((_) async {
-      //startup();
-      setState(() {
-        _visible = true;
-      });
+      startup();
     });
   }
 
@@ -49,12 +46,7 @@ class _Home extends State<Home> {
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             direction: orientation == Orientation.portrait ? Axis.vertical : Axis.horizontal,
             children: <Widget>[
-              AnimatedOpacity(
-                opacity: _visible ? 1.0 : 0.0,
-                duration: Duration(milliseconds: 2000),
-                child: Image.asset('assets/icons/linto_ai.png',height: lintoWidth, fit: BoxFit.contain),
-                onEnd: () async => startup(),
-              )
+              Image.asset('assets/icons/linto_ai.png',height: lintoWidth, fit: BoxFit.contain),
             ],
           )
         )
@@ -72,7 +64,7 @@ class _Home extends State<Home> {
             Login(mainController: _mainController,
               step: AuthenticationStep.WELCOME,)));
         return;
-      } else if (!clientPrefs['keep_info']){
+      } else if (!clientPrefs['reconnect']){
         await Navigator.push(context, MaterialPageRoute(builder: (context) =>
             Login(mainController: _mainController,
               step: AuthenticationStep.SERVERSELECTION,)));

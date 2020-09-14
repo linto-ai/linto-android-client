@@ -206,4 +206,9 @@ class _MeetingInterface extends State<MeetingInterface> implements VoiceUIContro
   void display(String content, bool isURL) {
 
   }
+
+  @override
+  void onError(String errorMessage) {
+    print("An error occured");
+  }
 }

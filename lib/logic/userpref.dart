@@ -68,7 +68,7 @@ class UserPreferences {
     print('User preferences loaded.');
   }
 
-  void createPrefs() async {
+  Future<void> createPrefs() async {
     print('userprefs.json does not exist, creating from template ...');
     String basePrefs =  await rootBundle.loadString('assets/config/userpref.json');
     var serialized = jsonEncode(jsonDecode(basePrefs));

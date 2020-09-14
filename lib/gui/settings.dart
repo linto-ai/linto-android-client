@@ -120,47 +120,8 @@ class _OptionInterface extends State<OptionInterface> {
                             ),
                           )
                         ),
-                        Container(
-                            child: Expanded(
-                              child: Flex(
-                                mainAxisAlignment: MainAxisAlignment.start,
-                                direction: orientation == Orientation.portrait ? Axis.vertical : Axis.horizontal,
-                                children: <Widget>[
-                                  Text('Application'.padRight(15, ' '), textAlign: TextAlign.left, ),
-                                  Expanded(
-                                      child: DropdownButton<String>(
-                                        value: 'default',
-                                        items: <String>['default', 'personnel'].map((String value) {
-                                          return new DropdownMenuItem(
-                                              value: value,
-                                              child: new Text(value)
-                                          );
-                                        }).toList(),
-                                        onChanged: (_) {},
-                                      )
-                                  ),
-                                ],
-                              ),
-                            )
-                        ),
+                        Spacer(),
                         sysInfo(_mainController),
-                        Container(
-                          child: Row(
-                            children: <Widget>[
-                              Spacer(),
-                              FlatButton(
-                                child: Row(
-                                  children: <Widget>[
-                                    Icon(Icons.person, size: 48,),
-                                    Text("Disconnect")
-                                  ],
-                                ),
-                                onPressed: ()  async => await onDisconnect(context),
-                              )
-                            ],
-                          ),
-                        )
-
                       ],
                       mainAxisAlignment: MainAxisAlignment.spaceAround,
                     ),
@@ -177,16 +138,6 @@ class _OptionInterface extends State<OptionInterface> {
     _userPref.updatePrefs();
     Navigator.pop(context, false);
   }
-
-  Future<void> onDisconnect(BuildContext context) async {
-    await confirmDialog(context, "Disconnect ?").then((bool toDisconnect) {
-      if (toDisconnect) {
-        _userPref.clientPreferences["keep_info"] = false;
-        _userPref.updatePrefs();
-        Navigator.pop(context, true);
-      }
-    });
-  }
   }
 
 Container sysInfo(MainController controller) {
@@ -195,13 +146,13 @@ Container sysInfo(MainController controller) {
     entryKeys = {
       'Login': controller.client.login,
       'Server': controller.client.server,
-      'Scope' : controller.client.currentScope
+      'Scope' : controller.client.currentScope.name
     };
   } else {
     entryKeys = {
       'Id' : controller.client.deviceID,
       'Broker': controller.client.brokerURL,
-      'Scope' : controller.client.currentScope
+      'Scope' : controller.client.currentScope.name
     };
   }
 
