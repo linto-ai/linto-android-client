@@ -17,5 +17,6 @@ class Transaction {
 enum TransactionState {
   WFORSERVER,
   WFORCLIENT,
-  RESOLVED
+  RESOLVED,
+  TIMEDOUT
 }

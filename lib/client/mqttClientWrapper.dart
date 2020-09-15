@@ -75,7 +75,7 @@ class MQTTClientWrapper {
       }
       if (client.connectionStatus.state == MqttConnectionState.connected) {
           connectionState = MQTTCurrentConnectionState.CONNECTED;
-          publish(statusTopic, {"connexion" : "online"}, retain: true);
+          publish(statusTopic, {"connexion" : "online"});
           print('MQTTClientWrapper::Mosquitto client connected');
       } else {
         print('MQTTClientWrapper::ERROR Mosquitto client connection failed - disconnecting, status is ${client.connectionStatus}');

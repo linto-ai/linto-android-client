@@ -1,5 +1,5 @@
 import 'dart:convert';
-import 'dart:typed_data';
+import 'dart:async';
 
 import 'package:flutter/cupertino.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -33,11 +33,14 @@ class MainController {
   ClientState state = ClientState.INITIALIZING;       // App State
 
   Transaction _currentTransaction = Transaction("");  // Current transaction.
+  
+  Timer _timeoutTimer;
 
   /// Stop client session
   void disconnect() {
     // Disconnect from broker
     userPreferences.clientPreferences["reconnect"] = false;
+    userPreferences.updatePrefs();
     client.disconnect();
     // Cut Audio
     audioManager.stopDetecting();
@@ -77,8 +80,27 @@ class MainController {
 
   /// Called on MQTT message received.
   void _onMessage(String topic, String msg) {
-    Map<String, dynamic> decodedMsg = jsonDecode(utf8.decode(msg.runes.toList()));
-    String targetTopic = topic.split('/').last;
+    _timeoutTimer.cancel();
+    Map<String, dynamic> decodedMsg;
+    String targetTopic;
+    try {
+      decodedMsg = jsonDecode(utf8.decode(msg.runes.toList()));
+      targetTopic = topic.split('/').last;
+    } on Exception catch (_) {
+      print("Could not read message from server");
+      return;
+    }
+    switch (targetTopic) {
+      case "ping" : {
+        client.pong();
+        return;
+      }
+      break;
+      case "tts_lang":  {
+        changeTTSLanguage(decodedMsg);
+        return;
+      }
+    }
     if (decodedMsg.keys.contains("error")) {
       _resolveErrors(decodedMsg['error']);
       return;
@@ -107,6 +129,16 @@ class MainController {
 
   void _resolveErrors(Map<String, dynamic> error) {
 
+  }
+
+  void changeTTSLanguage(Map<String, dynamic> msg) async{
+    try {
+      var lang = msg["value"];
+      var res = await _tts.changeLanguage(lang);
+      if(!res) print("Language $lang unavailable on this device");
+    } on Exception catch (_) {
+      print("Could not change Language");
+    }
   }
 
   /// Synthesize speech
@@ -202,6 +234,14 @@ class MainController {
     print(request["audio"].length);
     request['conversationData'] = transaction.conversationData;
     client.sendMessage(request, subTopic: "/nlp/file/${transaction.transactionID}");
+    _timeoutTimer = Timer(Duration(seconds: 12), () => _onRequestTimeOut());
+  }
+
+  void _onRequestTimeOut() {
+    _currentTransaction.transactionState = TransactionState.TIMEDOUT;
+    print("Request timed out");
+    currentUI.onError("Request has timed out");
+
   }
 
   void _onUtteranceCanceled() {

@@ -4,7 +4,6 @@ import 'package:flutter/services.dart';
 import 'package:auto_size_text/auto_size_text.dart';
 import 'package:linto_flutter_client/client/client.dart' show AuthenticationStep;
 import 'package:linto_flutter_client/gui/dialogs.dart';
-import 'package:linto_flutter_client/gui/utils/flaredisplay.dart';
 import 'package:linto_flutter_client/logic/customtypes.dart';
 import 'package:linto_flutter_client/logic/maincontroller.dart';
 import 'package:linto_flutter_client/gui/mainInterface.dart';
@@ -21,13 +20,8 @@ class Login extends StatefulWidget {
 // Define a corresponding State class.
 // This class holds data related to the form.
 class _Login extends State<Login> {
-  // Create a global key that uniquely identifies the Form widget
-  // and allows validation of the form.
-  //
-  // Note: This is a `GlobalKey<FormState>`,
-  // not a GlobalKey<MyCustomFormState>
   MainController _mainController;
-
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   void initState() {
     super.initState();
     _mainController = widget.mainController;
@@ -36,11 +30,11 @@ class _Login extends State<Login> {
   @override
   Widget build(BuildContext context) {
     Orientation orientation = MediaQuery.of(context).orientation;
-    double lintoWidth = MediaQuery.of(context).size.width * (orientation == Orientation.portrait ? 0.9: 0.45);
-    AuthenticationWidget authWidget = AuthenticationWidget(mainController : _mainController, scaffoldContext: context, startingStep: widget.step,);
+    AuthenticationWidget authWidget = AuthenticationWidget(mainController : _mainController, scaffoldKey: _scaffoldKey, startingStep: widget.step,);
     return WillPopScope(
       onWillPop: () {},
       child: Scaffold(
+        key: _scaffoldKey,
         body: Builder(
           builder: (context) =>
               SafeArea(
@@ -74,11 +68,11 @@ class _Login extends State<Login> {
 /// Authentication Widget
 class AuthenticationWidget extends StatefulWidget {
   final MainController mainController;
-  final BuildContext scaffoldContext;
+  final GlobalKey<ScaffoldState> scaffoldKey;
   final AuthenticationStep startingStep;
 
 
-  const AuthenticationWidget({ Key key, this.mainController, this.scaffoldContext, this.startingStep : AuthenticationStep.SERVERSELECTION}) : super(key: key);
+  const AuthenticationWidget({ Key key, this.mainController, this.scaffoldKey, this.startingStep : AuthenticationStep.SERVERSELECTION}) : super(key: key);
 
   @override
   _AuthenticationWidget createState() => _AuthenticationWidget();
@@ -90,10 +84,11 @@ class _AuthenticationWidget extends State<AuthenticationWidget> {
   //
   // Note: This is a `GlobalKey<FormState>`,
   // not a GlobalKey<MyCustomFormState>.
-  final _formKey = GlobalKey<FormState>();
+  GlobalKey<ScaffoldState> scaffoldKey;
+  final _formCKey = GlobalKey<FormState>();
+  final _formMKey = GlobalKey<FormState>();
 
   MainController _mainController;
-  BuildContext _scaffoldContext;
   AuthenticationStep _step;
 
   // Welcome controller
@@ -134,7 +129,7 @@ class _AuthenticationWidget extends State<AuthenticationWidget> {
   void initState() {
     super.initState();
     _mainController = widget.mainController;
-    _scaffoldContext = widget.scaffoldContext;
+    scaffoldKey = widget.scaffoldKey;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       loadUserPref();
       setState(() {
@@ -150,7 +145,7 @@ class _AuthenticationWidget extends State<AuthenticationWidget> {
     //_step = AuthenticationStep.WELCOME;
     switch(_step) {
       case AuthenticationStep.WELCOME : {
-        return welcomeWidget(context);
+        return welcomeWidget();
       }
       break;
 
@@ -169,7 +164,7 @@ class _AuthenticationWidget extends State<AuthenticationWidget> {
       }
       break;
       case AuthenticationStep.AUTHENTICATED : {
-        return credentialsWidget();
+          return credentialsWidget();
       }
       break;
       case AuthenticationStep.CONNECTED: {}
@@ -189,11 +184,11 @@ class _AuthenticationWidget extends State<AuthenticationWidget> {
           ),
           Expanded(
             child: Form(
-              key :_formKey,
+              key :_formCKey,
               child: TextFormField(
                 controller: _serverC,
                 focusNode: _serverFocus,
-                inputFormatters: [WhitelistingTextInputFormatter(RegExp(r'[a-zA-Z0-9.://]'))],
+                inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[a-zA-Z0-9.://]'))],
                 decoration: InputDecoration(
                     labelText: ''
                 ),
@@ -205,8 +200,9 @@ class _AuthenticationWidget extends State<AuthenticationWidget> {
                 },
                 textInputAction: TextInputAction.done,
                 onFieldSubmitted: (term) {
-                  _formKey.currentState.validate();
-                  requestServerRoutes(_scaffoldContext, _serverC.value.text);
+                  SystemChannels.textInput.invokeMethod('TextInput.hide');
+                  _formCKey.currentState.validate();
+                  requestServerRoutes(_serverC.value.text);
                 },
               ),
             ),
@@ -227,7 +223,9 @@ class _AuthenticationWidget extends State<AuthenticationWidget> {
                     Text("  OK  ", style: TextStyle(fontSize: 20, color: Colors.white),),
                   ],
                 ),
-                onPressed: () {requestServerRoutes(_scaffoldContext, _serverC.value.text);},
+                onPressed: () {
+                  requestServerRoutes(_serverC.value.text);
+                  },
               ),
 
             ],
@@ -258,7 +256,7 @@ class _AuthenticationWidget extends State<AuthenticationWidget> {
   Widget credentialsWidget() {
     return Expanded(
         child: Form(
-          key: _formKey,
+          key: _formCKey,
           child: Flex(
             direction: MediaQuery.of(context).orientation == Orientation.portrait ? Axis.vertical : Axis.horizontal,
             children: <Widget>[
@@ -271,7 +269,7 @@ class _AuthenticationWidget extends State<AuthenticationWidget> {
                       decoration: InputDecoration(
                           labelText: 'Login :'
                       ),
-                      inputFormatters: [WhitelistingTextInputFormatter(RegExp(r'[a-zA-Z0-9@\-.]'))],
+                      inputFormatters: [FilteringTextInputFormatter.allow((RegExp(r'[a-zA-Z0-9@\-.]')))],
                       validator: (value)  {
                         if (value.isEmpty) {
                           return 'Please enter login';
@@ -312,7 +310,8 @@ class _AuthenticationWidget extends State<AuthenticationWidget> {
                       textInputAction: TextInputAction.done,
                       onFieldSubmitted: (term) {
                         if (term.isNotEmpty) {
-                          authenticate(_scaffoldContext, _loginC.value.text, _passwordC.value.text);
+                          SystemChannels.textInput.invokeMethod('TextInput.hide');
+                          authenticate(_loginC.value.text, _passwordC.value.text);
                         }
                       },
                     ),
@@ -351,7 +350,7 @@ class _AuthenticationWidget extends State<AuthenticationWidget> {
                           ),
                           onPressed: () {
                             if (_loginC.value.text.isNotEmpty && _passwordC.value.text.isNotEmpty) {
-                              authenticate(_scaffoldContext, _loginC.value.text, _passwordC.value.text);
+                              authenticate(_loginC.value.text, _passwordC.value.text);
                             }
                           },
                         ),
@@ -369,7 +368,7 @@ class _AuthenticationWidget extends State<AuthenticationWidget> {
     );
   }
 
-  Widget welcomeWidget(BuildContext context) {
+  Widget welcomeWidget() {
     var width = MediaQuery.of(context).size.width * 0.6;
     return Expanded(
       child: Column(
@@ -422,7 +421,7 @@ class _AuthenticationWidget extends State<AuthenticationWidget> {
                 ),
                 onPressed: () async {
                   if (! await _mainController.requestPermissions()) {
-                    displaySnackMessage(context, "Permissions missing");
+                    displaySnackMessage("Permissions missing");
                     return;
                   }
                   setState(() {
@@ -442,7 +441,7 @@ class _AuthenticationWidget extends State<AuthenticationWidget> {
   Widget directWidget() {
     return Expanded(
         child: Form(
-          key: _formKey,
+          key: _formMKey,
           child: ListView(
             children: <Widget>[
               AutoSizeText("Directly connect to your single application.",
@@ -637,7 +636,7 @@ class _AuthenticationWidget extends State<AuthenticationWidget> {
                       ],
                     ),
                     onPressed: () {
-                      directConnect(_scaffoldContext);
+                      directConnect();
                     },
                   ),
 
@@ -668,12 +667,13 @@ class _AuthenticationWidget extends State<AuthenticationWidget> {
     }
   }
 
-  void requestServerRoutes(BuildContext context, String server) async {
+  void requestServerRoutes(String server) async {
+    if (!_formCKey.currentState.validate()) return;
     List<dynamic> routes;
     try {
       routes = await _mainController.client.requestRoutes(server.trim());
     } on ClientErrorException catch(error) {
-      displaySnackMessage(context, error.error.toString(), isError: true);
+      displaySnackMessage(error.error.toString(), isError: true);
       return;
     }
     if (routes.length == 1) {
@@ -717,13 +717,12 @@ class _AuthenticationWidget extends State<AuthenticationWidget> {
   }
 
   /// Submit credential to the authentication server.
-  void authenticate(BuildContext scaffoldContext, String login, String password) async {
-    SystemChannels.textInput.invokeMethod('TextInput.hide');
+  void authenticate(String login, String password) async {
     // 1- Request authentification token
     try {
       await _mainController.client.requestAuthentification(login.trim(), password);
     } on ClientErrorException catch(error) {
-      displaySnackMessage(scaffoldContext, error.error.toString(), isError: true);
+      displaySnackMessage(error.error.toString(), isError: true);
       return;
     }
     // 2- Request scopes
@@ -731,18 +730,18 @@ class _AuthenticationWidget extends State<AuthenticationWidget> {
     try {
       scopes = await _mainController.client.requestScopes();
     } on ClientErrorException catch(error) {
-      displaySnackMessage(scaffoldContext, error.error.toString(), isError: true);
+      displaySnackMessage(error.error.toString(), isError: true);
       return;
     }
     print(scopes);
 
     // 3 Select scope
-    var selectedScope = await showScopeDialog(scaffoldContext, "Select application", scopes);
+    var selectedScope = await showScopeDialog(scaffoldKey.currentState.context, "Select application", scopes);
 
     // 4- Establish connexion to broker
     var success = await _mainController.client.setScope(selectedScope);
     if (!success) {
-      displaySnackMessage(scaffoldContext, 'Could not connect to broker', isError: true);
+      displaySnackMessage('Could not connect to broker', isError: true);
       return;
     }
 
@@ -753,15 +752,15 @@ class _AuthenticationWidget extends State<AuthenticationWidget> {
     Navigator.push(context, MaterialPageRoute(builder: (context) => MainInterface(mainController: _mainController,)));
   }
 
-  void displaySnackMessage(BuildContext context, String message, {bool isError: false}) async {
+  void displaySnackMessage(String message, {bool isError: false}) async {
     final snackBarError = SnackBar(
       content: Text(message),
       backgroundColor: isError ? Colors.red : Color(0x3db5e4),
     );
-    Scaffold.of(context).showSnackBar(snackBarError);
+    scaffoldKey.currentState.showSnackBar(snackBarError);
   }
 
-  Future<void> directConnect(BuildContext scaffoldContext) async{
+  Future<void> directConnect() async{
     SystemChannels.textInput.invokeMethod('TextInput.hide');
 
     bool res = await _mainController.client.directConnexion(_brokerC.value.text,
@@ -772,7 +771,7 @@ class _AuthenticationWidget extends State<AuthenticationWidget> {
                                                             _scopeC.value.text,
                                                             _protocol == "mqtts");
     if (!res) {
-      displaySnackMessage(context, "Could not connect to broker using those informations.", isError: true);
+      displaySnackMessage("Could not connect to broker using those informations.", isError: true);
     } else {
       updateConnPrefs();
       Navigator.push(context, MaterialPageRoute(builder: (context) => MainInterface(mainController: _mainController,)));

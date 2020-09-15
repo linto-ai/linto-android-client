@@ -39,16 +39,26 @@ class TTS {
     _errorCallback = cb;
   }
 
-  initTts() {
+  initTts() async {
     flutterTts = FlutterTts();
+    getLanguages();
     flutterTts.setLanguage("fr-FR");
     flutterTts.setStartHandler(_startCallback);
     flutterTts.setCompletionHandler(_stopCallback);
   }
 
-  Future<List<String>> getLanguages() async {
+  Future<void> getLanguages() async {
     languages = await flutterTts.getLanguages;
-    return languages;
+  }
+
+  /// Changes current tts language
+  /// Returns success.
+  Future<bool> changeLanguage(String lang) async {
+    if (languages.contains(lang)) {
+      flutterTts.setLanguage(lang);
+      return true;
+    }
+    return false;
   }
 
   Future speak(String text) async {

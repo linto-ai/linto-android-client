@@ -17,6 +17,7 @@ enum AuthenticationStep{
 }
 
 class LinTOClient {
+  static const String CLIENT_VERSION = "0.1.1";
 
   final String APIROUTES = "/auths";
   final String APIAUTHSUFFIX = "/android/login";
@@ -328,7 +329,6 @@ class LinTOClient {
     return AuthenticationStep.CONNECTED;
   }
 
-
   Future<AuthenticationStep> directReconnect(UserPreferences userPrefs) async {
     var prefs = userPrefs.clientPreferences["direct"];
     bool res = await directConnexion(prefs["broker_ip"], prefs["broker_port"], prefs["broker_id"], userPrefs.passwordM, prefs["serial_number"], prefs["scope"], true);
@@ -410,6 +410,15 @@ class LinTOClient {
     }
     return null;
   }
+
+  void pong() {
+    sendMessage(Map<String, dynamic>(), subTopic: "/pong");
+  }
+
+  Future<String> getIP() async {
+
+  }
+
 }
 
 class ApplicationScope {
