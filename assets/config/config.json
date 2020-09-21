@@ -12,7 +12,9 @@
       "windowStride": 512,
       "nFFT" : 512,
       "numFilters": 20,
-      "numCoefs": 13
+      "numCoefs": 13,
+      "preEmp" : 0.97,
+      "energy" : false
     },
     "kws": {
       "modelName": "linto_tflite.tflite",

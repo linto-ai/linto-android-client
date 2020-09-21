@@ -17,13 +17,17 @@ enum MQTTSubscriptionState {
 }
 
 class MQTTClientWrapper {
+  static const STATUS_TOPIC = "/status";
   MqttServerClient client;
   MQTTCurrentConnectionState connectionState = MQTTCurrentConnectionState.IDLE;
   MQTTSubscriptionState subscriptionState = MQTTSubscriptionState.IDLE;
 
   MsgCallback _onError;
   MQTTMessageCallback _onMessage = (topic, msg) => print("$topic : $msg");
-  String _comTopic;
+  String _subTopic;
+  String _pubTopic;
+  bool _retainStatus = false;
+  Map<String, dynamic> deviceInfo;
 
   set onMessage(MQTTMessageCallback cb) {
     _onMessage = cb;
@@ -37,33 +41,42 @@ class MQTTClientWrapper {
     _onError = onError;
   }
 
-  Future<void> setupClient(String serverURI, String serverPort, String name, String topic,{bool usesLogin: false, String login : "", String password : ""}) async {
-      client = MqttServerClient.withPort(serverURI, name, int.parse(serverPort));
+  Future<void> setupClient(String serverURI,
+                           String serverPort,
+                           String name,
+                           String subscribingTopic,
+                           String publishingTopic,
+                           Map<String, dynamic> deviceInfos,
+                           {bool usesLogin: false, String login : "", String password : "", bool retain = false}) async {
+    this.deviceInfo = deviceInfos;
+    _retainStatus = retain;
+    client = MqttServerClient.withPort(serverURI, name, int.parse(serverPort));
       client.onDisconnected = _onDisconnect;
-      client.onConnected = () => _onConnect("$topic/status");
+      client.onConnected = () => _onConnect();
       client.onSubscribed = _onSubscribe;
-      _comTopic = topic;
+      _subTopic = subscribingTopic;
+      _pubTopic = publishingTopic;
       final connMess = MqttConnectMessage()
         .withClientIdentifier(name)
-        .keepAliveFor(3600)
-        .withWillTopic("$topic/status")
-        .withWillMessage(jsonEncode({"connexion" : "offline"}))
+        .keepAliveFor(60)
+        .withWillTopic("$_pubTopic/status")
+        .withWillMessage(jsonEncode({"connexion" : "offline", ...deviceInfos}))
         .startClean()
-        .withWillRetain()
         .withWillQos(MqttQos.atLeastOnce);
+
+      if(_retainStatus) {
+        connMess.withWillRetain();
+      }
 
       if (usesLogin) {
         connMess.authenticateAs(login, password);
       }
       client.connectionMessage = connMess;
 
-      await _connectClient("$topic/status");
-      if(connectionState == MQTTCurrentConnectionState.CONNECTED) {
-        _subscribeToTopic("$topic/#");
-      }
+      await _connectClient();
   }
 
-  Future<void> _connectClient(String statusTopic) async {
+  Future<void> _connectClient() async {
       try {
           print('MQTTClientWrapper::Mosquitto client connecting....');
           connectionState = MQTTCurrentConnectionState.CONNECTING;
@@ -75,7 +88,6 @@ class MQTTClientWrapper {
       }
       if (client.connectionStatus.state == MqttConnectionState.connected) {
           connectionState = MQTTCurrentConnectionState.CONNECTED;
-          publish(statusTopic, {"connexion" : "online"});
           print('MQTTClientWrapper::Mosquitto client connected');
       } else {
         print('MQTTClientWrapper::ERROR Mosquitto client connection failed - disconnecting, status is ${client.connectionStatus}');
@@ -106,17 +118,11 @@ class MQTTClientWrapper {
     connectionState = MQTTCurrentConnectionState.DISCONNECTED;
   }
 
-  void _reconnect() async {
-    while (connectionState != MQTTCurrentConnectionState.CONNECTED) {
-      print("Try to reconnect to broker.");
-      await _connectClient("$_comTopic/status");
-
-    }
-  }
-
-  void _onConnect(String topic) {
+  void _onConnect() {
     connectionState = MQTTCurrentConnectionState.CONNECTED;
     print('MQTTClientWrapper::OnConnected client callback - Client connection was sucessful');
+    publish("$_pubTopic$STATUS_TOPIC", {"connexion": "online", ...deviceInfo}, retain: _retainStatus);
+    _subscribeToTopic("$_subTopic/#");
   }
 
   void _onSubscribe(String topic) {
@@ -125,14 +131,19 @@ class MQTTClientWrapper {
   }
 
   void publish(String topic, Map<String, dynamic> payload, {bool retain: false,}) {
-    if (connectionState != MQTTCurrentConnectionState.CONNECTED) return;
+    if (connectionState != MQTTCurrentConnectionState.CONNECTED){
+      print("Broker disconnected");
+      return;
+    }
     var payload_formated = jsonEncode(payload);
     MqttClientPayloadBuilder builder = MqttClientPayloadBuilder();
     builder.addString(payload_formated);
-    client.publishMessage(topic, MqttQos.exactlyOnce, builder.payload, retain: retain);
+    client.publishMessage(topic, MqttQos.atMostOnce, builder.payload, retain: retain);
+    print("Published on $topic.");
   }
 
   void disconnect() {
+    publish("$_pubTopic$STATUS_TOPIC", {"connexion": "offline", ...deviceInfo}, retain: _retainStatus);
     client.disconnect();
   }
 }

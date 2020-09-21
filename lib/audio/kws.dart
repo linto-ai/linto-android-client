@@ -31,7 +31,7 @@ class KWS {
   Future<void> detect() async {
     if (isReady) {
       var result = await platform.invokeMethod('detect', <String, dynamic>{'input' : _featureBuffer});
-      if (result > _threshold) {
+      if (result >= _threshold) {
         print(result);
         _callback(result);
       }

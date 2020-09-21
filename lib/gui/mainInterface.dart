@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:linto_flutter_client/client/client.dart';
 import 'package:linto_flutter_client/gui/clock.dart';
 import 'package:linto_flutter_client/gui/meeting.dart';
+import 'package:linto_flutter_client/gui/recorder.dart';
 import 'package:linto_flutter_client/gui/settings.dart';
 import 'package:linto_flutter_client/gui/slidingPanelContent.dart';
 import 'package:linto_flutter_client/logic/maincontroller.dart';
@@ -180,7 +181,7 @@ class _MainInterface extends State<MainInterface> implements VoiceUIController{
                                      fit: BoxFit.fill,
                                      child: Icon(Icons.mic_none, color: Color.fromARGB(255, 60,187,242), size: 80,)
                                  ),
-                               onPressed: () async => await infoDialog(context, "Not Implemented"),
+                               onPressed: () async => await displayRecorder(),
                              ),
                              FlatButton(
                                  child: FittedBox(
@@ -239,12 +240,20 @@ class _MainInterface extends State<MainInterface> implements VoiceUIController{
     _mainController.abord();
   }
 
-  void displayMeeting() {
-    Navigator.push(context, MaterialPageRoute(builder: (context) => MeetingInterface()));
+  void displayMeeting() async{
+    var ret = await newMeetingDialog(context);
+    if (ret == null) return;
+    Navigator.push(context, MaterialPageRoute(builder: (context) => MeetingInterface(ret)));
   }
 
   void notImplementedDisplay() async {
 
+  }
+
+  void displayRecorder() async {
+    _mainController.audioManager.stopDetecting();
+    await Navigator.push(context, MaterialPageRoute(builder: (context) => RecorderInterface(_mainController.audioManager)));
+    _mainController.audioManager.startDetecting();
   }
 
   void displaySettings() async {

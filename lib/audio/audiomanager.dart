@@ -66,6 +66,7 @@ class AudioManager {
   List<double> signalBuffer = List<double>();
 
   File _currentWritingFile;
+  IOSink _currentFileSink;
 
   // UI CallBacks
   VoidCallback _onDetection = () => print('Unset onDetection Callback');
@@ -81,7 +82,12 @@ class AudioManager {
     print('config loaded');
     _microphone = MicrophoneInput(_settings['audio']['samplingRate'], _settings['audio']['encoding'], _settings['audio']['channels']);
     _microphone.frameSink = _onAudioFrames;
-    _mfcc = MFCC(_settings['audio']['samplingRate'], _settings['audio']['features']['nFFT'], _settings['audio']['features']['numFilters'], _settings['audio']['features']['numCoefs'], energy: false);
+    _mfcc = MFCC(_settings['audio']['samplingRate'],
+                 _settings['audio']['features']['nFFT'],
+                 _settings['audio']['features']['numFilters'],
+                 _settings['audio']['features']['numCoefs'],
+                 energy: _settings['audio']['features']['energy'],
+                 preEmphasis: _settings['audio']['features']['preEmp']);
     print('initialized');
     _kws = KWS();
     await _kws.loadModel('linto_tflite.tflite');
@@ -100,7 +106,7 @@ class AudioManager {
     _utterance.onFrame(signal);
     if (_inputRecorded) {
       Uint8List signalBytes = Uint8List.fromList(signal);
-      _currentWritingFile.writeAsBytesSync(signalBytes);
+      _currentFileSink.write(signalBytes);
     }
   }
 
@@ -203,12 +209,14 @@ class AudioManager {
     }
     String filePath = await getFilePath(fileName);
     _currentWritingFile = File(filePath);
+    _currentFileSink = _currentWritingFile.openWrite();
     _inputRecorded = true;
   }
 
   void pauseRecording() {
     if (_inputRecorded) {
       _inputRecorded = false;
+
     }
   }
 
@@ -218,10 +226,11 @@ class AudioManager {
     }
   }
 
-  void stopRecording() {
+  int stopRecording() {
     if (_inputRecorded) {
       _inputRecorded = false;
-
+      _currentFileSink.close();
+      print("File size: ${_currentWritingFile.lengthSync()}");
     }
   }
   /// Get the path to a Document Directory File using [fileName].

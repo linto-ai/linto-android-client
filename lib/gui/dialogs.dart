@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:linto_flutter_client/client/client.dart';
 
@@ -105,6 +106,94 @@ Future<void> infoDialog(BuildContext context, String message) async {
               onPressed: () {
                 Navigator.pop(context, true);
               }),
+        ],
+      );
+    }
+  );
+}
+
+Future<String> saveDialog(BuildContext context, String message) async {
+  TextEditingController fileName = TextEditingController();
+  final _formKey = GlobalKey<FormState>();
+  return await showDialog<String>(
+      context: context,
+      builder: (BuildContext context) {
+        return SimpleDialog(
+          title: Text(message),
+          children: <Widget>[
+            Column(
+              children: [
+                Form(
+                  child: TextFormField(
+                    key: _formKey,
+                    controller: fileName,
+                  ),
+                ),
+                Row(
+                  children: [
+                    SimpleDialogOption(
+                        child: Text("Ignore"),
+                        onPressed: () {
+                          Navigator.pop(context, null);
+                    }),
+                    SimpleDialogOption(
+                        child: Text("Save"),
+                        onPressed: () {
+                          Navigator.pop(context, fileName.value.text);
+                    }),
+                  ],
+                )
+              ],
+            )
+          ],
+        );
+      }
+  );
+}
+
+Future<Map<String, dynamic>> newMeetingDialog(BuildContext context) async {
+  TextEditingController meetingName = TextEditingController();
+  final _formKey = GlobalKey<FormState>();
+  return await showDialog<Map<String, dynamic>>(
+    context: context,
+    builder: (BuildContext context) {
+      return SimpleDialog(
+        title: Text("Meeting"),
+        contentPadding: EdgeInsets.all(20),
+        children: [
+          Form(
+            key: _formKey,
+            child: TextFormField(
+              controller: meetingName,
+              decoration: InputDecoration(
+                  labelText: "Meeting Name"
+              ),
+              validator:(value)  {
+                if (value.isEmpty || value == "https://") {
+                  return 'Please enter a meeting name';
+                }
+                return null;
+              },
+            ),
+          ),
+          Row(
+            children: [
+              SimpleDialogOption(
+                child: Text("Cancel"),
+                onPressed: () {
+                  return Navigator.pop(context,null);
+                },
+              ),
+              SimpleDialogOption(
+                child: Text("Create Meeting"),
+                onPressed: () {
+                  if(_formKey.currentState.validate()) {
+                    return Navigator.pop(context,{"meeting_name": meetingName.value.text});
+                  }
+                },
+              )
+            ],
+          )
         ],
       );
     }

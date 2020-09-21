@@ -1,16 +1,13 @@
 import 'dart:async';
 import 'package:auto_size_text/auto_size_text.dart';
 import 'package:flutter/material.dart';
-import 'package:linto_flutter_client/gui/clock.dart';
 import 'package:intl/intl.dart';
 import 'package:linto_flutter_client/gui/utils/flaredisplay.dart';
-import 'package:linto_flutter_client/gui/lintoDisplay.dart';
-import "package:flutter/material.dart";
-import 'package:flutter/services.dart';
 import 'package:linto_flutter_client/logic/uicontroller.dart';
 
 class MeetingInterface extends StatefulWidget {
-  MeetingInterface({Key key}) : super(key: key);
+  final Map<String, dynamic> meetingInfo;
+  MeetingInterface(this.meetingInfo, {Key key}) : super(key: key);
 
   @override
   _MeetingInterface createState() => new _MeetingInterface();
@@ -19,7 +16,7 @@ class MeetingInterface extends StatefulWidget {
 class _MeetingInterface extends State<MeetingInterface> implements VoiceUIController{
   bool isActiveView = true;
   bool _isPaused = false;
-  String _meetingName = 'Point sur les avancées du projet';
+  String _meetingName = 'Meeting';
 
   DateTime _startTime;
   String _time = '00:00:00';
@@ -29,6 +26,7 @@ class _MeetingInterface extends State<MeetingInterface> implements VoiceUIContro
   @override
   void initState() {
     super.initState();
+    _meetingName = widget.meetingInfo["meeting_name"];
     _time = _formatTime();
     _startTime = DateTime.now();
     _timer = Timer.periodic(Duration(seconds: 1), (Timer t) => _updateTime());

@@ -41,7 +41,7 @@ class TTS {
 
   initTts() async {
     flutterTts = FlutterTts();
-    getLanguages();
+    await getLanguages();
     flutterTts.setLanguage("fr-FR");
     flutterTts.setStartHandler(_startCallback);
     flutterTts.setCompletionHandler(_stopCallback);

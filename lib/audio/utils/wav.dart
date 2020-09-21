@@ -1,4 +1,6 @@
 import 'dart:typed_data';
+import 'package:path_provider/path_provider.dart';
+import 'dart:io';
 
 /// Converts List<int> signal into a wave file buffer including header.
 Uint8List rawSig2Wav(List<int> signal, int sampleRate, int channels, int encoding) {
@@ -30,7 +32,38 @@ Uint8List generateWavHeader(int sigLength, int sampleRate, int channels, int enc
   header.setAll(40, Uint32List.fromList([sigLength]).buffer.asUint8List());
   return header;
 }
+
 /// Converts a List<int> to a Uint8List with little endian int16 encoding
 Uint8List listIntToUintList(List<int> signal) {
   return Int16List.fromList(signal).buffer.asUint8List();
+}
+
+/// Saves a raw file from application folder to a wav file in user folder.
+void rawToWav(String rawFileName, String wavFileName) async{
+  if (! wavFileName.endsWith('.wav')) wavFileName = wavFileName + '.wav';
+
+  var applicationFolder = await getApplicationDocumentsDirectory();
+  var userFolder = await getExternalStorageDirectory();
+  File rawFile;
+  File wavFile;
+  // Open tmp raw file
+  try {
+    rawFile = File("$applicationFolder/$rawFileName");
+  } on Exception catch(_) {
+    throw Exception("Could not read file");
+  }
+  // Open target file
+  try {
+    wavFile = File("$userFolder/$wavFileName");
+  } on Exception catch(_) {
+    throw Exception("Could not open target file");
+  }
+
+  // Add wav header
+
+  // Write target file
+
+  print(userFolder.path);
+  print(applicationFolder.path);
+
 }

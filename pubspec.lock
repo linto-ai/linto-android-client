@@ -21,7 +21,7 @@ packages:
       name: audioplayers
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "0.15.1"
+    version: "0.16.1"
   auto_size_text:
     dependency: "direct main"
     description:
@@ -124,7 +124,7 @@ packages:
       name: flutter_tts
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "1.2.2"
+    version: "1.2.7"
   flutter_web_plugins:
     dependency: transitive
     description: flutter
@@ -136,7 +136,7 @@ packages:
       name: http
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "0.12.1"
+    version: "0.12.2"
   http_parser:
     dependency: transitive
     description:
@@ -164,7 +164,7 @@ packages:
       name: matcher
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "0.12.6"
+    version: "0.12.9"
   meta:
     dependency: transitive
     description:
@@ -236,7 +236,7 @@ packages:
       name: permission_handler
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "5.0.1"
+    version: "5.0.1+1"
   permission_handler_platform_interface:
     dependency: transitive
     description:
@@ -297,7 +297,7 @@ packages:
       name: stack_trace
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "1.9.3"
+    version: "1.9.5"
   string_scanner:
     dependency: transitive
     description:
@@ -356,6 +356,13 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "0.3.22+1"
+  wifi_info_plugin:
+    dependency: "direct main"
+    description:
+      name: wifi_info_plugin
+      url: "https://pub.dartlang.org"
+    source: hosted
+    version: "1.1.5"
   xml:
     dependency: transitive
     description:

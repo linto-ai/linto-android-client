@@ -701,7 +701,7 @@ class _AuthenticationWidget extends State<AuthenticationWidget> {
       credPrefs["last_login"] = _loginC.text;
       credPrefs["last_route"] = _mainController.client.authRoute;
       credPrefs["last_scope"] = _mainController.client.currentScope.topic;
-      _mainController.userPreferences.updatePasswordC(_passwordC.value.text);
+      _mainController.userPreferences.updatePasswordM(_passwordC.value.text);
     } else {
       prefs["auth_cred"] = false;
       var dirPrefs = prefs["direct"];
@@ -710,7 +710,7 @@ class _AuthenticationWidget extends State<AuthenticationWidget> {
       dirPrefs["broker_port"] = _portC.text;
       dirPrefs["broker_id"] = _mqttLoginC.text;
       dirPrefs["scope"] = _scopeC.text;
-      _mainController.userPreferences.updatePasswordM(_passwordC.value.text);
+      _mainController.userPreferences.updatePasswordM(_mqttPassC.value.text);
     }
 
     _mainController.userPreferences.updatePrefs();

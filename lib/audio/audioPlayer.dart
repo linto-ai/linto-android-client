@@ -14,6 +14,10 @@ class Audio {
     _audioPlayer.play(assetPath);
   }
 
+  void playFile(String filePath) async {
+
+  }
+
   void playPCM(List<int> signal, {int sampleRate : 16000, int channels: 1}) {
   }
 }

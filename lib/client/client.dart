@@ -1,11 +1,13 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:http/http.dart' as http;
 import 'package:linto_flutter_client/client/mqttClientWrapper.dart';
 import 'package:linto_flutter_client/logic/customtypes.dart';
 import 'package:linto_flutter_client/logic/userpref.dart';
+import 'package:wifi_info_plugin/wifi_info_plugin.dart';
 
 enum AuthenticationStep{
   WELCOME,
@@ -17,7 +19,7 @@ enum AuthenticationStep{
 }
 
 class LinTOClient {
-  static const String CLIENT_VERSION = "0.1.1";
+  static const String CLIENT_VERSION = "0.2.0";
 
   final String APIROUTES = "/auths";
   final String APIAUTHSUFFIX = "/android/login";
@@ -50,7 +52,7 @@ class LinTOClient {
   List<dynamic>  _authRoutes;
   Map<String, dynamic> _authRoute;
 
-  bool _authentificated = false;
+  bool _authenticated = false;
 
   MQTTClientWrapper mqttClient;
 
@@ -67,7 +69,7 @@ class LinTOClient {
   }
 
   bool get isConnected {
-    return _authentificated;
+    return _authenticated;
   }
 
   Map<String, dynamic> get authRoute {
@@ -93,6 +95,7 @@ class LinTOClient {
     String lastlog = data['client']['last_login'];
     return lastlog;
   }
+
   /// Retrieve last used server from config file
   Future<String> getLastServer() async {
     String content =  await rootBundle.loadString('assets/config/config.json');
@@ -265,15 +268,14 @@ class LinTOClient {
     }
   }
 
-  Future<bool> setScope(ApplicationScope scope) async{
+  Future<bool> setScope(ApplicationScope scope) async {
     _selectedScope = scope;
     _publishingTopic = "${scope.topic}$MQTTEGRESS/$_sessionID";
     _subscribingTopic = "${scope.topic}$MQTTINGRESS/$_sessionID";
 
     await connectToBroker();
-    _authentificated =  mqttClient.connectionState == MQTTCurrentConnectionState.CONNECTED;
-
-    return _authentificated;
+    _authenticated =  mqttClient.connectionState == MQTTCurrentConnectionState.CONNECTED;
+    return _authenticated;
   }
 
   Future<bool> changeScope(ApplicationScope scope) async {
@@ -333,25 +335,28 @@ class LinTOClient {
     var prefs = userPrefs.clientPreferences["direct"];
     bool res = await directConnexion(prefs["broker_ip"], prefs["broker_port"], prefs["broker_id"], userPrefs.passwordM, prefs["serial_number"], prefs["scope"], true);
     if (res) {
-      _selectedScope = prefs["scope"];
-      _sessionID = prefs["serial_number"];
       return AuthenticationStep.CONNECTED;
     } else {
       return AuthenticationStep.DIRECTCONNECT;
     }
   }
 
-  void connectToBroker() async {
+  void connectToBroker({bool directConnexion = false}) async {
     mqttClient = MQTTClientWrapper((msg) => print("Error : $msg"), (msg) => print("Message ! $msg"));
-    await mqttClient.setupClient(_mqttHost, _mqttPort, _sessionID, _subscribingTopic, login : _mqttLogin , password: _mqttPassword, usesLogin: _mqttUseLogin);
+    Map<String, dynamic> deviceInfos = await getDeviceInfo();
+    await mqttClient.setupClient(_mqttHost,
+                                 _mqttPort,
+                                 _sessionID,
+                                 _subscribingTopic,
+                                 _publishingTopic,
+                                 deviceInfos,
+                                 login : _mqttLogin ,
+                                 password: _mqttPassword,
+                                 usesLogin: _mqttUseLogin,
+                                 retain: directConnexion);
   }
 
   void sendMessage(Map<String, dynamic> message, {String subTopic : ""}) {
-    if (mqttClient.connectionState != MQTTCurrentConnectionState.CONNECTED) {
-      print("Client MQTT disconnected disconnected, reconnecting...");
-      //TODO
-      return;
-    }
     message['auth_token'] = "Android ${_token}";
     mqttClient.publish("$_publishingTopic$subTopic", message);
     print("Send message on $_publishingTopic$subTopic");
@@ -369,8 +374,9 @@ class LinTOClient {
     _subscribingTopic = "$scope$MQTTINGRESS/$id";
     _selectedScope = ApplicationScope(scope, "Direct connexion", "Direct connexion");
     scopes = [_selectedScope];
-    await this.connectToBroker();
-    return mqttClient.connectionState == MQTTCurrentConnectionState.CONNECTED;
+    await this.connectToBroker(directConnexion: true);
+    _authenticated = mqttClient.connectionState == MQTTCurrentConnectionState.CONNECTED;
+    return _authenticated;
   }
 
   void requestNewToken() {
@@ -378,27 +384,29 @@ class LinTOClient {
   }
 
   void disconnect() async {
-    if (_authentificated) {
+    if (_authenticated) {
       Map<String, String> requestHeaders = { 'Content-type': 'application/json', 'Accept': 'application/json', 'Authorization' : 'Android $_token'};
-      var response;
-      try {
-        response = await http.get("$_authServURI$APIPREFIX${_authRoute['basePath']}$APILOGOUTSUFFIX", headers: requestHeaders);
-      } on TimeoutException catch (_) {
-        print('Disconnect timeout');
-      } on SocketException catch (_) {
-        print('Disconnect didn\'t reach server.');
-      }
-      switch(response.statusCode) {
-        case 200: {
-          print('Disconnect response status: ${response.statusCode}');
+      if(_authRoute != null) {
+        var response;
+        try {
+          response = await http.get("$_authServURI$APIPREFIX${_authRoute['basePath']}$APILOGOUTSUFFIX", headers: requestHeaders);
+        } on TimeoutException catch (_) {
+          print('Disconnect timeout');
+        } on SocketException catch (_) {
+          print('Disconnect didn\'t reach server.');
         }
-        break;
-        default: {
-          print('Disconnect response status: ${response.statusCode}');
+        switch(response.statusCode) {
+          case 200: {
+            print('Disconnect response status: ${response.statusCode}');
+          }
+          break;
+          default: {
+            print('Disconnect response status: ${response.statusCode}');
+          }
+          break;
         }
-        break;
       }
-      _authentificated = false;
+      _authenticated = false;
       mqttClient.disconnect();
     }
   }
@@ -415,10 +423,28 @@ class LinTOClient {
     sendMessage(Map<String, dynamic>(), subTopic: "/pong");
   }
 
-  Future<String> getIP() async {
 
+  /// Returns device's informations
+  Future<Map<String, dynamic>> getDeviceInfo() async {
+    WifiInfoWrapper wifiObject;
+    Map<String, dynamic> ret = Map<String, dynamic>();
+    ret["config"] = Map<String, dynamic>();
+    ret["config"]["network"] = List<Map<String, String>>();
+    ret["config"]["firmware"] = CLIENT_VERSION;
+    try {
+      wifiObject = await WifiInfoPlugin.wifiDetails;
+    } on Exception catch(_) {
+      return ret;
+    }
+    var network = Map<String, String>();
+    network["mac_address"] = wifiObject.macAddress;
+    network["gateway_ip"] = wifiObject.routerIp;
+    network["type"] = wifiObject.connectionType;
+    network["ip_address"] = wifiObject.ipAddress;
+    network["name"] = "android";
+    ret["config"]["network"].add(network);
+    return ret;
   }
-
 }
 
 class ApplicationScope {

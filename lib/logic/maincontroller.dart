@@ -80,7 +80,7 @@ class MainController {
 
   /// Called on MQTT message received.
   void _onMessage(String topic, String msg) {
-    _timeoutTimer.cancel();
+    if(_timeoutTimer != null) _timeoutTimer.cancel();
     Map<String, dynamic> decodedMsg;
     String targetTopic;
     try {
