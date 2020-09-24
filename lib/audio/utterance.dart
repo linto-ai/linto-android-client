@@ -17,8 +17,8 @@ class Utterance {
   static const int _SAMPLE_RATE = 16000;
   static const int _ENCODING = 2;
 
-  static const int _N_PREV_FRAME = 10;
-  static const int _N_FOLLOW_FRAME = 12;
+  static const int _N_PREV_FRAME = 15;
+  static const int _N_FOLLOW_FRAME = 15;
 
   /// Frame size (sample), must be compatible with the vad engine.
   static const int _VAD_FRAME_LENGTH = 480;

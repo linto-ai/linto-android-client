@@ -18,7 +18,7 @@ class _Clock extends State<Clock> {
   void initState() {
     _time = _formatTime(DateTime.now());
     _date = _formatDate(DateTime.now());
-    _timer = Timer.periodic(Duration(seconds: 1), (Timer t) => _getTime());
+    _timer = Timer.periodic(Duration(seconds: 10), (Timer t) => _getTime());
     super.initState();
   }
   @override
@@ -58,11 +58,11 @@ class _Clock extends State<Clock> {
   }
 
   String _formatTime(DateTime dateTime) {
-    return DateFormat('HH:mm:ss').format(dateTime);
+    return DateFormat('HH:mm').format(dateTime);
   }
 
   String _formatDate(DateTime dateTime) {
-    return DateFormat('(EEEE) dd/MM/yyyy').format(dateTime);
+    return DateFormat('EEEE dd/MM/yyyy').format(dateTime);
   }
 
   @override

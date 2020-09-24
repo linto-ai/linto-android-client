@@ -156,7 +156,7 @@ class _MainInterface extends State<MainInterface> implements VoiceUIController{
                            primary: false,
                            crossAxisSpacing: 10,
                            mainAxisSpacing: 10,
-                           crossAxisCount: orientation == Orientation.portrait ? 3 : 6,
+                           crossAxisCount: orientation == Orientation.portrait ? 3 : 5,
                            children: <Widget>[
                              FlatButton(
                                child: Image.asset('assets/icons/meeting_blue.png', height: 80, width: 80,),
@@ -252,7 +252,7 @@ class _MainInterface extends State<MainInterface> implements VoiceUIController{
 
   void displayRecorder() async {
     _mainController.audioManager.stopDetecting();
-    await Navigator.push(context, MaterialPageRoute(builder: (context) => RecorderInterface(_mainController.audioManager)));
+    await Navigator.push(context, MaterialPageRoute(builder: (context) => RecorderInterface(_mainController.audioManager, _mainController.audioPlayer)));
     _mainController.audioManager.startDetecting();
   }
 

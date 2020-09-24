@@ -25,7 +25,7 @@ class MainController {
 
   final LinTOClient client = LinTOClient();           // Network connectivity
   final AudioManager audioManager = AudioManager();   // Audio input
-  final Audio _audioPlayer = Audio();                 // Audio output
+  final Audio audioPlayer = Audio();                 // Audio output
   final TTS _tts = TTS();                             // Text to speech
   VoiceUIController currentUI;                        // UI interface
   UserPreferences userPreferences = UserPreferences();// Persistent user preferences
@@ -196,7 +196,7 @@ class MainController {
 
   void _onKeywordSpotted() {
     currentUI.onKeywordSpotted();
-    _audioPlayer.playAsset(_audioAssets['START']);
+    audioPlayer.playAsset(_audioAssets['START'], isAsset: true);
     print(DateTime.now());
     Future.delayed(const Duration(milliseconds: 750)).whenComplete(() {
       print(DateTime.now());
@@ -210,7 +210,7 @@ class MainController {
   }
 
   void _onUtteranceEnd(List<int> signal) {
-    _audioPlayer.playAsset(_audioAssets['STOP']);
+    audioPlayer.playAsset(_audioAssets['STOP'], isAsset: true);
     currentUI.onUtteranceEnd();
     if (_currentTransaction.transactionState == TransactionState.WFORCLIENT) {
 
@@ -246,7 +246,7 @@ class MainController {
 
   void _onUtteranceCanceled() {
     currentUI.onUtteranceCanceled();
-    _audioPlayer.playAsset(_audioAssets['CANCELED']);
+    audioPlayer.playAsset(_audioAssets['CANCELED'], isAsset: true);
     state = ClientState.IDLE;
     audioManager.startDetecting();
   }

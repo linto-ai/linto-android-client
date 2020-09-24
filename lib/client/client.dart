@@ -19,7 +19,7 @@ enum AuthenticationStep{
 }
 
 class LinTOClient {
-  static const String CLIENT_VERSION = "0.2.0";
+  static const String CLIENT_VERSION = "0.2.1";
 
   final String APIROUTES = "/auths";
   final String APIAUTHSUFFIX = "/android/login";

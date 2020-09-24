@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:linto_flutter_client/client/client.dart';
+import 'package:flutter/services.dart' show FilteringTextInputFormatter;
 
 
 /// Scope selection dialog
@@ -70,6 +71,7 @@ List<SimpleDialogOption> listRoutes(BuildContext context, List<dynamic> options)
   return dialogOptions;
 }
 
+/// Disconnect confirm dialog
 Future<bool> confirmDialog(BuildContext context, String title, {String description : ""}) async {
   return await showDialog<bool>(
     context: context,
@@ -94,6 +96,7 @@ Future<bool> confirmDialog(BuildContext context, String title, {String descripti
   );
 }
 
+/// Simple information dialog with dismiss button.
 Future<void> infoDialog(BuildContext context, String message) async {
   return await showDialog<void>(
     context: context,
@@ -112,6 +115,7 @@ Future<void> infoDialog(BuildContext context, String message) async {
   );
 }
 
+/// Save or ignore dialog, returns a filename.
 Future<String> saveDialog(BuildContext context, String message) async {
   TextEditingController fileName = TextEditingController();
   final _formKey = GlobalKey<FormState>();
@@ -119,14 +123,23 @@ Future<String> saveDialog(BuildContext context, String message) async {
       context: context,
       builder: (BuildContext context) {
         return SimpleDialog(
-          title: Text(message),
+          contentPadding: EdgeInsets.all(10),
+          title: Text(message, maxLines: 3,),
           children: <Widget>[
             Column(
               children: [
                 Form(
+                  key: _formKey,
                   child: TextFormField(
-                    key: _formKey,
                     controller: fileName,
+                    decoration: InputDecoration(
+                      labelText: 'File name'
+                  ),
+                    inputFormatters: [FilteringTextInputFormatter.allow((RegExp(r'[a-zA-Z0-9@\-.]')))],
+                    validator: (value) {
+                      if (value.isEmpty) return "A file needs a name";
+                      else return null;
+                    },
                   ),
                 ),
                 Row(
@@ -139,8 +152,11 @@ Future<String> saveDialog(BuildContext context, String message) async {
                     SimpleDialogOption(
                         child: Text("Save"),
                         onPressed: () {
-                          Navigator.pop(context, fileName.value.text);
-                    }),
+                          if (_formKey.currentState.validate()) {
+                            Navigator.pop(context, fileName.value.text);
+                          }
+                        }
+                    ),
                   ],
                 )
               ],

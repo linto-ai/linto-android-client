@@ -444,7 +444,7 @@ class _AuthenticationWidget extends State<AuthenticationWidget> {
           key: _formMKey,
           child: ListView(
             children: <Widget>[
-              AutoSizeText("Directly connect to your single application.",
+              AutoSizeText("Directly connect to your single application",
                 style: TextStyle(fontSize: 20), maxLines: 2, textAlign: TextAlign.center,),
               TextFormField(
                 decoration: InputDecoration(

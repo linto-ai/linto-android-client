@@ -39,7 +39,7 @@ class _OptionInterface extends State<OptionInterface> {
             body: SafeArea(
                 child: Center(
                   child: Container(
-                    padding: EdgeInsets.only(right: 20, left: 20),
+                    padding: EdgeInsets.all(20),
                     child: Column(
                       children: <Widget>[
                         Container(
@@ -56,69 +56,51 @@ class _OptionInterface extends State<OptionInterface> {
                           ),
                         ),
                         Container(
-                          child: Expanded(
-                            child: Flex(
-                              mainAxisAlignment: MainAxisAlignment.start,
-                              direction: orientation == Orientation.portrait ? Axis.vertical : Axis.horizontal,
-                              children: <Widget>[
-                                Text('Notification'.padRight(15, ' '), textAlign: TextAlign.left,),
-                                Expanded(
-                                  child: Slider(value: _notif,
-                                    min: 0.0, max: 100.0,
-                                    label: _notif.toString(),
-                                    onChanged: (value) {setState(() {
-                                      _notif = value;
-                                    });},
+                          padding: EdgeInsets.only(top: 50),
+                            child: Column (
+                              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                              children: [
+                                Container(
+                                  child: Column(
+                                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                                    crossAxisAlignment: CrossAxisAlignment.center,
+                                    children: [
+                                      Text('Notifications'.padRight(15, ' '), textAlign: TextAlign.left,),
+                                      Slider(
+                                        value: _notif,
+                                        min: 0.0, max: 100.0,
+                                        label: _notif.toString(),
+                                        onChanged: (value) {
+                                          setState(() {
+                                            _notif = value;
+                                          });
+                                        },
+                                      ),
+                                    ],
                                   ),
-                                  flex: 1,
                                 ),
-                              ],
-                            ),
-                          )
-                        ),
-                        Container(
-                          child: Expanded(
-                            child: Flex(
+                                Container(
+                                  child: Column(
+                                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                                    crossAxisAlignment: CrossAxisAlignment.center,
+                                    children: [
+                                      Text('Speech'.padRight(15, ' '), textAlign: TextAlign.left,),
+                                      Slider(
+                                        value: _speech,
+                                        min: 0.0, max: 100.0,
+                                        label: _speech.toString(),
+                                        onChanged: (value) {
+                                          setState(() {
+                                            _speech = value;
+                                          });
+                                        },
+                                      ),
+                                    ],
+                                  ),
+                                )
 
-                              mainAxisAlignment: MainAxisAlignment.spaceAround,
-                              direction: orientation == Orientation.portrait ? Axis.vertical : Axis.horizontal,
-                              children: <Widget>[
-                                Text('Speech'.padRight(17, ' '), textAlign: TextAlign.left, ),
-                                Expanded(
-                                  child: Slider(value: _speech,
-                                      min: 0.0, max: 100.0,
-                                      label: _speech.toString(),
-                                      onChanged: (value) {setState(() {
-                                        _speech = value;
-                                      });
-                                      }),
-                                ),
-                              ],
-                            ),
-                          )
-                        ),
-                        Container(
-                          child: Expanded(
-                            child: Flex(
-                              mainAxisAlignment: MainAxisAlignment.start,
-                              direction: orientation == Orientation.portrait ? Axis.vertical : Axis.horizontal,
-                              children: <Widget>[
-                                Text('Language'.padRight(15, ' '), textAlign: TextAlign.left, ),
-                                Expanded(
-                                    child: DropdownButton<String>(
-                                      value: 'fr-FR',
-                                      items: <String>['fr-FR',].map((String value) {
-                                        return new DropdownMenuItem(
-                                            value: value,
-                                            child: new Text(value)
-                                        );
-                                      }).toList(),
-                                      onChanged: (_) {},
-                                    )
-                                ),
-                              ],
-                            ),
-                          )
+                              ]
+                          ),
                         ),
                         Spacer(),
                         sysInfo(_mainController),
@@ -171,7 +153,7 @@ Container SysInfoEntry (String key, String value) {
     child: Row(
       children: <Widget>[
         Text(key.padRight(10, ' ') ,style: TextStyle(fontWeight: FontWeight.bold),),
-        Text(value.length < 20 ? value :value.substring(0,20))
+        Text(value.length < 30 ? value :value.substring(0,30))
       ],
     ),
   );

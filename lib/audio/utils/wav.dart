@@ -38,32 +38,39 @@ Uint8List listIntToUintList(List<int> signal) {
   return Int16List.fromList(signal).buffer.asUint8List();
 }
 
-/// Saves a raw file from application folder to a wav file in user folder.
-void rawToWav(String rawFileName, String wavFileName) async{
-  if (! wavFileName.endsWith('.wav')) wavFileName = wavFileName + '.wav';
+/// Saves a raw file to wav file.
+Future<void> rawToWav(String rawFilePath, String wavFilePath) async{
 
-  var applicationFolder = await getApplicationDocumentsDirectory();
-  var userFolder = await getExternalStorageDirectory();
   File rawFile;
   File wavFile;
   // Open tmp raw file
   try {
-    rawFile = File("$applicationFolder/$rawFileName");
+    rawFile = File(rawFilePath);
   } on Exception catch(_) {
-    throw Exception("Could not read file");
+    throw Exception("Could not open tmp file");
   }
   // Open target file
   try {
-    wavFile = File("$userFolder/$wavFileName");
+    wavFile = File(wavFilePath); //  /storage/emulated/0/Documents/$wavFileName
   } on Exception catch(_) {
     throw Exception("Could not open target file");
   }
+  Uint8List signalBytes;
+  try {
+    signalBytes = await rawFile.readAsBytes();
+  } on Exception catch(_) {
+    throw Exception("Could not read source file");
+  }
+  print(signalBytes.length);
+  try {
+    await wavFile.writeAsBytes(generateWavHeader(signalBytes.length, 16000, 1, 16) + signalBytes);
+  } on Exception catch(_) {
+    throw Exception("Could not write target file");
+  }
 
-  // Add wav header
+  print(wavFilePath);
+}
 
-  // Write target file
-
-  print(userFolder.path);
-  print(applicationFolder.path);
-
+Future<Duration> getFileDuration(String filePath) {
+  File file = File(filePath);
 }

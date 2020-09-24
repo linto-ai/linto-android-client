@@ -1,21 +1,28 @@
 import 'dart:async';
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:linto_flutter_client/audio/audioPlayer.dart';
 import 'package:linto_flutter_client/audio/audiomanager.dart';
 import 'package:linto_flutter_client/gui/dialogs.dart';
-import 'package:linto_flutter_client/audio/utils/wav.dart';
+import 'package:audioplayers/audioplayers.dart';
 
 
 const  TMP_FILE_NAME = "recorder_tmp.raw";
+const String SAVE_FOLDER = "/Documents/";
+
 enum RecorderState {
-  PAUSED,
-  STOPPED,
+  IDLE,
   RECORDING,
+  RECORDINGPAUSED,
+  PLAYINGSTOPPED,
   PLAYING
 }
 
 class RecorderInterface extends StatefulWidget {
   final AudioManager audioManager;
-  RecorderInterface(this.audioManager, {Key key}) : super(key: key);
+  final Audio audioPlayer;
+
+  RecorderInterface(this.audioManager, this.audioPlayer, {Key key}) : super(key: key);
 
   @override
   _RecorderInterface createState() => new _RecorderInterface();
@@ -23,16 +30,29 @@ class RecorderInterface extends StatefulWidget {
 
 class _RecorderInterface extends State<RecorderInterface> {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
+  AudioPlayer _audioPlayer;
 
-  RecorderState state = RecorderState.STOPPED;
-  bool _hasAudio = false;
+  RecorderState state = RecorderState.IDLE;
+
+  String recordingPath;
+  String recordedPath;
+
   Stopwatch timeWatch = Stopwatch(); // Record duration
   Timer updateTimer; // Update displayed duration
   String duration = "00:00";
 
+  Duration audioPosition = Duration(seconds: 0);
+  Duration audioDuration = Duration(seconds: 1);
+
+  StreamSubscription _durationSubscription;
+  StreamSubscription _positionSubscription;
+  StreamSubscription _playerCompleteSubscription;
+
   @override
   void initState() {
     super.initState();
+    _positionSubscription = widget.audioPlayer.onPositionChanged.listen((event) {onPositionChanged(event);});
+    _initAudioPlayer();
   }
 
   @override
@@ -45,30 +65,21 @@ class _RecorderInterface extends State<RecorderInterface> {
           if (state == RecorderState.RECORDING) stopRecording();
           else if (state == RecorderState.PLAYING) stopPlaying();
           String filename;
-          if (_hasAudio) {
-            filename = await saveDialog(context, "Save recorded audio ?");
+          if (state != RecorderState.IDLE) {
+            filename = await saveDialog(context, "Save recorded audio ? (Will be saved in Documents/)");
             if (filename != null) {
-              rawToWav(TMP_FILE_NAME, filename);
+              await saveFile(filename);
             }
           }
           if(updateTimer != null) {
             updateTimer.cancel();
           }
-
           return true;
         },
         child: Scaffold(
             key: _scaffoldKey,
             appBar: AppBar(
               title: Text("Recorder"),
-              actions: <Widget>[
-                IconButton(
-                  icon: const Icon(Icons.menu),
-                  onPressed: () {
-                    _scaffoldKey.currentState.openEndDrawer();
-                  },
-                )
-              ],
             ),
             body: SafeArea(
               child: Center(
@@ -112,10 +123,28 @@ class _RecorderInterface extends State<RecorderInterface> {
                                   }()),
                                 ),
                               ),
-                              child: Text(duration, style: TextStyle(fontSize: 30),),
+                              child: Text(duration,
+                                style: TextStyle(fontSize: 30),),
                               alignment: Alignment.center,
                             ),
                             flex: 2,
+                          ),
+                          Visibility(
+                            visible: [RecorderState.PLAYING, RecorderState.PLAYINGSTOPPED].contains(state),
+                            child: Container(
+                              child: Slider(
+                                value: audioPosition.inSeconds.toDouble(),
+                                min: 0,
+                                max: audioDuration.inSeconds.toDouble(),
+                                onChanged: (value) {
+                                  setState(() {
+                                    audioPosition = Duration(seconds: value.toInt());
+                                    changePosition(Duration(seconds: value.toInt()));
+                                  });
+
+                                },
+                              ),
+                            )
                           ),
                           Expanded(
                             flex: 1,
@@ -124,8 +153,8 @@ class _RecorderInterface extends State<RecorderInterface> {
                               children: [
                                 IconButton(
                                   icon: Icon(Icons.stop),
-                                  onPressed: ![RecorderState.RECORDING, RecorderState.PLAYING].contains(state) ? null : () {
-                                    if( state == RecorderState.RECORDING) {
+                                  onPressed: ![RecorderState.RECORDING, RecorderState.RECORDINGPAUSED, RecorderState.PLAYING].contains(state) ? null : () {
+                                    if([RecorderState.RECORDING, RecorderState.RECORDINGPAUSED].contains(state)) {
                                       stopRecording();
                                     } else {
                                       stopPlaying();
@@ -134,9 +163,10 @@ class _RecorderInterface extends State<RecorderInterface> {
                                 ),
                                 IconButton(
                                   icon: Icon(Icons.play_arrow),
-                                  onPressed: ![RecorderState.PAUSED, RecorderState.STOPPED].contains(state) ? null : _hasAudio ? null : () {
+                                  onPressed: !(state == RecorderState.PLAYINGSTOPPED) ? null : () {
                                     setState(() {
                                       state = RecorderState.PLAYING;
+                                      resumePlaying();
                                     });
                                   },
                                 ),
@@ -152,7 +182,7 @@ class _RecorderInterface extends State<RecorderInterface> {
                                 ),
                                 IconButton(
                                   icon: Icon(Icons.fiber_manual_record, color: state == RecorderState.RECORDING ? Colors.grey : Colors.red,),
-                                  onPressed: ![RecorderState.PAUSED, RecorderState.STOPPED].contains(state) ? null : () {
+                                  onPressed: ![RecorderState.IDLE, RecorderState.PLAYINGSTOPPED].contains(state) ? null : () {
                                     startRecording();
                                   },
                                 )
@@ -166,36 +196,43 @@ class _RecorderInterface extends State<RecorderInterface> {
                 ),
               ),
             ),
-          endDrawer: Drawer(
-            child: ListView(
-                padding: EdgeInsets.zero,
-                children: <Widget>[],
-            ),
-          ),
         ),
     );
   }
-   void startRecording() {
-     if (state == RecorderState.STOPPED) {
-       if (_hasAudio) {
 
-       }
+  void _initAudioPlayer() {
+    _audioPlayer = AudioPlayer();
+    _durationSubscription = _audioPlayer.onDurationChanged.listen((duration) => onDurationChanged(duration));
+    _positionSubscription = _audioPlayer.onAudioPositionChanged.listen((position) => onPositionChanged(position));
+    _playerCompleteSubscription = _audioPlayer.onPlayerCompletion.listen((event) => onPlayingCompletion());
+  }
+
+   Future<void> startRecording() async {
+     if (state == RecorderState.PLAYINGSTOPPED) {
+       // confirm dialog
        timeWatch.reset();
        updateDuration();
      }
      setState(() {
-       _hasAudio = true;
        state = RecorderState.RECORDING;
      });
      timeWatch.start();
      updateTimer = Timer.periodic(Duration(seconds: 1), (timer) { updateDuration();});
-     widget.audioManager.startRecording(TMP_FILE_NAME);
+     recordingPath = await widget.audioManager.startRecording();
    }
 
-   bool startPlaying() {}
+   void startPlaying() {
+     _audioPlayer.resume();
+     setState(() {
+       state = RecorderState.PLAYING;
+     });
+   }
+
+   void changePosition(Duration position) {
+    _audioPlayer.seek(position);
+   }
 
    void resumeRecording() {
-
     setState(() {
       state = RecorderState.RECORDING;
     });
@@ -203,34 +240,71 @@ class _RecorderInterface extends State<RecorderInterface> {
     updateTimer = Timer.periodic(Duration(seconds: 1), (timer) { updateDuration();});
    }
 
-   bool resumePlaying() {}
+   void setPosition(double value) {
+      _audioPlayer.seek(Duration(seconds: value.toInt()));
+   }
+
+   bool resumePlaying() {
+     _audioPlayer.resume();
+     setState(() {
+       state = RecorderState.PLAYING;
+     });
+   }
 
    void pauseRecording() {
     setState(() {
-      state = RecorderState.PAUSED;
+      state = RecorderState.RECORDINGPAUSED;
     });
     timeWatch.stop();
     updateTimer.cancel();
     widget.audioManager.pauseRecording();
    }
 
-   bool pausePlaying() {}
-
-   bool stopRecording() {
+   bool pausePlaying() {
+     _audioPlayer.stop();
      setState(() {
-       state = RecorderState.STOPPED;
+       state = RecorderState.PLAYINGSTOPPED;
+     });
+   }
+
+   Future<void> stopRecording() async {
+     setState(() {
+       state = RecorderState.PLAYINGSTOPPED;
      });
      timeWatch.stop();
      updateTimer.cancel();
-     widget.audioManager.stopRecording();
+     recordedPath = await widget.audioManager.stopRecording();
+     _audioPlayer.setUrl(recordedPath, isLocal: true);
    }
 
-   bool stopPlaying() {}
-
-   /// Saves temporary recording file to device user directory.
-   void saveAudio(String filename) {
+   void onAudioPositionChanged(Duration position) {
+    setState(() {
+      audioPosition = position;
+    });
 
    }
+
+   void onDurationChanged(Duration duration) {
+    setState(() {
+      audioDuration = duration;
+    });
+   }
+
+   void onPlayingCompletion() {
+    setState(() {
+      state = RecorderState.PLAYINGSTOPPED;
+      audioPosition = Duration(seconds: 0);
+    });
+   }
+
+   bool stopPlaying() {
+    setState(() {
+      state = RecorderState.PLAYINGSTOPPED;
+      _audioPlayer.stop();
+      _audioPlayer.seek(Duration(seconds: 0));
+    });
+   }
+
 
    /// Timer function for updating UI duration.
    String updateDuration() {
@@ -241,4 +315,15 @@ class _RecorderInterface extends State<RecorderInterface> {
      });
    }
 
+   /// Audio Player callback on position change.
+   void onPositionChanged(Duration position) {
+    setState(() {
+      audioPosition = position;
+    });
+   }
+
+   void saveFile(String fileName) async {
+      File waveFile = File(recordedPath);
+      waveFile.copy("/storage/emulated/0$SAVE_FOLDER$fileName.wav");
+   }
 }

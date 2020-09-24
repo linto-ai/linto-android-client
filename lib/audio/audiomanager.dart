@@ -9,13 +9,28 @@ import 'microphone.dart';
 import 'kws.dart';
 import 'utterance.dart';
 import 'package:linto_flutter_client/logic/customtypes.dart';
+import 'package:linto_flutter_client/audio/utils/wav.dart' show listIntToUintList;
+import 'package:linto_flutter_client/audio/utils/wav.dart' show generateWavHeader, rawToWav;
 
 const String CONFIG_FILE_PATH = "assets/config/config.json";
 
+enum VoiceState {
+  INIT,
+  IDLE,
+  LISTENING,
+  REQUESTPENDING,
+  SPEAKING,
+  MUTED
+}
+
+/// Audio Manager manages audio inputs.
+/// Sound is collected using the Microphone class and processed
+/// frame by frame.
 class AudioManager {
-  // Settings
+  /// Settings
   Map _settings;
 
+  /// Audio recording state
   VoiceState currentState = VoiceState.INIT;
 
   /// True if input is recorded
@@ -52,23 +67,30 @@ class AudioManager {
     return _isReady;
 }
 
-  // Debug
-  Function(String) debugPromptFun;
-
-  // Processing
+  /// Processing
+  /// Feature extraction
   MFCC _mfcc;
+
+  /// Audio input
   MicrophoneInput _microphone;
+
+  /// Keyword spotting
   KWS _kws;
+
+  /// Voice activity and utterance detection
   Utterance _utterance;
+
+  /// Audio player
   Audio _audio;
 
-  //Buffer
+  /// Audio buffer for request
   List<double> signalBuffer = List<double>();
 
+  /// File IO for recording
   File _currentWritingFile;
   IOSink _currentFileSink;
 
-  // UI CallBacks
+  /// UI CallBacks
   VoidCallback _onDetection = () => print('Unset onDetection Callback');
   VoidCallback _onReady = () => print('Unset onReady Callback');
   VoidCallback _onUtteranceStart = () => print('Unset onUtteranceStart Callback');
@@ -76,6 +98,11 @@ class AudioManager {
   VoidCallback _onCanceled = () => print('Unset onCanceled Callback');
 
   AudioManager() : super();
+
+  /// Reads audio settings from config file (json)
+  Future<Map> _loadSettings() async {
+    return jsonDecode(await rootBundle.loadString(CONFIG_FILE_PATH));
+  }
 
   void initialize() async {
     _settings = await _loadSettings();
@@ -101,18 +128,22 @@ class AudioManager {
     _onReady();
   }
 
-  // Callback functions
+  /// Called on microphone audio frame
   void _onAudioFrames(List<num> signal) {
     _utterance.onFrame(signal);
     if (_inputRecorded) {
-      Uint8List signalBytes = Uint8List.fromList(signal);
-      _currentFileSink.write(signalBytes);
+      Uint8List signalBytes = listIntToUintList(signal);
+      _currentFileSink.add(signalBytes);
     }
   }
 
+  /// Called on silence frame.
+  /// Utterance (silence) -> _onSilenceFrame
   void _onSilenceFrame(List<int> frame) {
   }
 
+  /// Called on speech frame
+  /// Utterance (speech) -> _onSpeechFrame
   void _onSpeechFrame(List<num> signal) {
     if (_isDetecting) {
       var frames = signal.map((v) => v.toDouble()).toList();
@@ -126,7 +157,7 @@ class AudioManager {
     }
   }
 
-  // Controller
+  /// Start utterance detection
   void detectUtterance() {
     _isDetectingUtterance = true;
     _onUtteranceStart();
@@ -134,12 +165,16 @@ class AudioManager {
     setVoiceState(VoiceState.LISTENING);
   }
 
+  /// Cancel utterance detection
+  /// Utterance should call _OnUtterance with status canceled in return.
   void cancelUtterance() {
     if (_isDetectingUtterance) {
       _utterance.cancelDetUtterance();
     }
   }
 
+  /// Utterance callback
+  /// Utterance (utterance end) -> _onUtterance
   void _onUtterance(List<int> audioBuffer, UtteranceStatus status){
     switch (status) {
       case UtteranceStatus.thresholdReached : {
@@ -162,20 +197,18 @@ class AudioManager {
     _isDetectingUtterance = false;
   }
 
-
+  /// Starts keyword spottting
   void startDetecting() {
     if (!_isDetecting) {
       _isDetecting = true;
     }
   }
+
+  /// Suspends keyword spotting
   void stopDetecting() {
     if (_isDetecting) {
       _isDetecting = false;
     }
-  }
-
-  Future<Map> _loadSettings() async {
-    return jsonDecode(await rootBundle.loadString(CONFIG_FILE_PATH));
   }
 
   void _onKWSpotted(double confidence) {
@@ -187,59 +220,66 @@ class AudioManager {
     }
   }
 
+  /// Triggers keyword.
   void triggerKeyword() async {
     _onKWSpotted(1.0);
   }
 
-  void playSound() {
-    _audio.playAsset('sounds/detection.wav');
-  }
-
-  void playSoundEnd() {
-    _audio.playAsset('sounds/detectEnd.wav');
-  }
-
-  void playSoundAborted() {
-    _audio.playAsset('sounds/canceled.wav');
-  }
-
-  Future<void> startRecording(String fileName) async {
+  /// Start audio recording.
+  /// Returns the path of a temporary raw file.
+  Future<String> startRecording() async {
     if (_inputRecorded) {
       stopRecording();
     }
-    String filePath = await getFilePath(fileName);
+    String filePath = await createTempFile();
     _currentWritingFile = File(filePath);
     _currentFileSink = _currentWritingFile.openWrite();
     _inputRecorded = true;
+    return filePath;
   }
 
+  /// Create a temporary file
+  /// Creating a new file will overwrite the previous one.
+  Future<String> createTempFile({String ext : "raw"}) async {
+    Directory tempPath = await getTemporaryDirectory();
+    return "${tempPath.path}/recording.$ext";
+  }
+
+  /// Pauses recording.
   void pauseRecording() {
     if (_inputRecorded) {
       _inputRecorded = false;
-
     }
   }
 
+  /// Resumes recording.
   void resumeRecording() {
     if (!_inputRecorded) {
       _inputRecorded = true;
     }
   }
 
-  int stopRecording() {
+  ///Stops recording and create a temporary wave file in tmp folder.
+  ///Return wave file path
+  Future<String> stopRecording() async {
     if (_inputRecorded) {
       _inputRecorded = false;
       _currentFileSink.close();
-      print("File size: ${_currentWritingFile.lengthSync()}");
+      String filePath = await createTempFile(ext: "wav");
+      rawToWav(_currentWritingFile.path, filePath);
+      print("Recorder: File size: ${_currentWritingFile.lengthSync()}");
+      print("Recorder: File written at: $filePath");
+      return filePath;
     }
   }
+
   /// Get the path to a Document Directory File using [fileName].
   Future<String> getFilePath(String fileName) async {
     final directory = await getApplicationDocumentsDirectory();
     return '${directory.path}/$fileName';
   }
 
-  ///   SETTERS
+  /// Callbacks setters
   void set onKeyWordSpotted(VoidCallback callback) {
     _onDetection = callback;
   }
@@ -260,18 +300,9 @@ class AudioManager {
     _onCanceled = callback;
   }
 
+  /// Change audiomanager state.
   void setVoiceState(VoiceState state) {
     currentState = state;
     print('Changing state to ${state.toString()}');
   }
-}
-
-
-enum VoiceState {
-  INIT,
-  IDLE,
-  LISTENING,
-  REQUESTPENDING,
-  SPEAKING,
-  MUTED
 }
