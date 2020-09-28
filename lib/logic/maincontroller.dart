@@ -39,8 +39,7 @@ class MainController {
   /// Stop client session
   void disconnect() {
     // Disconnect from broker
-    userPreferences.clientPreferences["reconnect"] = false;
-    userPreferences.updatePrefs();
+    userPreferences.setValue("reconnect", false);
     client.disconnect();
     // Cut Audio
     audioManager.stopDetecting();

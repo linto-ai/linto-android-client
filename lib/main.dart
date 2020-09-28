@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:linto_flutter_client/gui/applications.dart';
 import 'package:linto_flutter_client/gui/home.dart';
 import 'package:linto_flutter_client/gui/login.dart';
+import 'package:linto_flutter_client/gui/mainInterface.dart';
 import 'package:linto_flutter_client/logic/maincontroller.dart';
 
 
@@ -15,7 +17,13 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
 
     return MaterialApp(
-      home: Home(mainController: mainController,)
+      initialRoute: '/',
+      routes : {
+        '/': (context) => Home(mainController: mainController),
+        '/login' : (context) => Login(mainController: mainController,),
+        '/applications' : (context) => Applications(mainController: mainController,),
+        '/main' : (context) => MainInterface(mainController: mainController,),
+      }
     );
   }
 }

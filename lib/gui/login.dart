@@ -7,7 +7,7 @@ import 'package:linto_flutter_client/gui/dialogs.dart';
 import 'package:linto_flutter_client/logic/customtypes.dart';
 import 'package:linto_flutter_client/logic/maincontroller.dart';
 import 'package:linto_flutter_client/gui/mainInterface.dart';
-
+import 'package:linto_flutter_client/gui/applications.dart' show Applications;
 
 class Login extends StatefulWidget {
   final MainController mainController;
@@ -450,7 +450,7 @@ class _AuthenticationWidget extends State<AuthenticationWidget> {
                 decoration: InputDecoration(
                     labelText: 'This device identifies as (unique ID):'
                 ),
-                inputFormatters: [WhitelistingTextInputFormatter(RegExp(r'[a-zA-Z0-9\-.@]'))],
+                inputFormatters: [FilteringTextInputFormatter.allow((RegExp(r'[a-zA-Z0-9@\-.]')))],
                 validator: (value)  {
                   if (value.isEmpty) {
                     return 'Please enter a SN';
@@ -495,7 +495,7 @@ class _AuthenticationWidget extends State<AuthenticationWidget> {
                       decoration: InputDecoration(
                           labelText: 'Connexion server'
                       ),
-                      inputFormatters: [WhitelistingTextInputFormatter(RegExp(r'[a-zA-Z0-9:\-.@]'))],
+                      inputFormatters: [FilteringTextInputFormatter.allow((RegExp(r'[a-zA-Z0-9@\-.]')))],
                       validator: (value)  {
                         if (value.isEmpty) {
                           return 'Please enter url';
@@ -539,7 +539,7 @@ class _AuthenticationWidget extends State<AuthenticationWidget> {
                   labelText: 'MQTT Login',
 
                 ),
-                inputFormatters: [WhitelistingTextInputFormatter(RegExp(r'[a-zA-Z0-9:\-.@]'))],
+                inputFormatters: [FilteringTextInputFormatter.allow((RegExp(r'[a-zA-Z0-9@\-.]')))],
                 validator: (value)  {
                   if (value.isEmpty) {
                     return 'Please enter password';
@@ -588,7 +588,7 @@ class _AuthenticationWidget extends State<AuthenticationWidget> {
                 decoration: InputDecoration(
                   labelText: 'Application ID',
                 ),
-                inputFormatters: [WhitelistingTextInputFormatter(RegExp(r'[a-zA-Z0-9:\-.@]'))],
+                inputFormatters: [FilteringTextInputFormatter.allow((RegExp(r'[a-zA-Z0-9@\-.]')))],
                 validator: (value)  {
                   if (value.isEmpty) {
                     return 'Please enter password';
@@ -650,19 +650,19 @@ class _AuthenticationWidget extends State<AuthenticationWidget> {
   }
 
   void loadUserPref() {
-    if (_mainController.userPreferences.clientPreferences['keep_info']) {
-      var prefs = _mainController.userPreferences.clientPreferences;
+    var preferences = _mainController.userPreferences;
+    if (preferences.getBool('keep_info')) {
       setState(() {
-        _serverC.text = prefs["credentials"]["last_server"];
-        _loginC.text = prefs["credentials"]["last_login"];
-        _passwordC.text = _mainController.userPreferences.passwordC;
+        _serverC.text = preferences.getString("cred_server");
+        _loginC.text = preferences.getString("cred_login");
+        _passwordC.text = preferences.passwordC;
 
-        _deviceIDC.text = prefs["direct"]["serial_number"];
-        _brokerC.text = prefs["direct"]["broker_ip"];
-        _portC.text = prefs["direct"]["broker_port"];
-        _mqttLoginC.text = prefs["direct"]["broker_id"];
+        _deviceIDC.text = preferences.getString("direct_sn");
+        _brokerC.text = preferences.getString("direct_ip");
+        _portC.text = preferences.getString("direct_port");
+        _mqttLoginC.text = preferences.getString("direct_id");
         _mqttPassC.text = _mainController.userPreferences.passwordM;
-        _scopeC.text = prefs["direct"]["scope"];
+        _scopeC.text = preferences.getString("direct_app");
       });
     }
   }
@@ -688,32 +688,38 @@ class _AuthenticationWidget extends State<AuthenticationWidget> {
   }
 
   /// Update connexion information.
+  void updateConnPrefs(bool cred) {
+    _mainController.userPreferences.setValues(
+      {
+        "first_login" : false,
+        "keep_info" : _remember,
+        "reconnect" : true,
+      }
+    );
 
-  void updateConnPrefs() {
-    var prefs = _mainController.userPreferences.clientPreferences;
-    prefs["first_login"] = false;
-    prefs["keep_info"] = _remember;
-    prefs["reconnect"] = true;
-    if(_step == AuthenticationStep.CREDENTIALS)  {
-      prefs["auth_cred"] = true;
-      var credPrefs = prefs["credentials"];
-      credPrefs["last_server"] = _serverC.text;
-      credPrefs["last_login"] = _loginC.text;
-      credPrefs["last_route"] = _mainController.client.authRoute;
-      credPrefs["last_scope"] = _mainController.client.currentScope.topic;
-      _mainController.userPreferences.updatePasswordM(_passwordC.value.text);
+    if(cred)  {
+      _mainController.userPreferences.setValues(
+          {
+            "auth_cred" : true,
+            "cred_server" : _serverC.text,
+            "cred_login" : _loginC.text,
+            "cred_route" : _mainController.client.authRoute["basePath"],
+          }
+      );
+      _mainController.userPreferences.passwordC =_passwordC.value.text;
     } else {
-      prefs["auth_cred"] = false;
-      var dirPrefs = prefs["direct"];
-      dirPrefs["serial_number"] = _deviceIDC.text;
-      dirPrefs["broker_ip"] = _brokerC.text;
-      dirPrefs["broker_port"] = _portC.text;
-      dirPrefs["broker_id"] = _mqttLoginC.text;
-      dirPrefs["scope"] = _scopeC.text;
-      _mainController.userPreferences.updatePasswordM(_mqttPassC.value.text);
+      _mainController.userPreferences.setValues(
+          {
+            "auth_cred" : false,
+            "direct_sn" : _deviceIDC.text,
+            "direct_ip" : _brokerC.text,
+            "direct_port" : _portC.text,
+            "direct_id" : _mqttLoginC.text,
+            "direct_app" : _scopeC.text
+          }
+      );
+      _mainController.userPreferences.passwordM = _mqttPassC.value.text;
     }
-
-    _mainController.userPreferences.updatePrefs();
   }
 
   /// Submit credential to the authentication server.
@@ -735,21 +741,11 @@ class _AuthenticationWidget extends State<AuthenticationWidget> {
     }
     print(scopes);
 
-    // 3 Select scope
-    var selectedScope = await showScopeDialog(scaffoldKey.currentState.context, "Select application", scopes);
-
-    // 4- Establish connexion to broker
-    var success = await _mainController.client.setScope(selectedScope);
-    if (!success) {
-      displaySnackMessage('Could not connect to broker', isError: true);
-      return;
-    }
-
     if (_remember) {
-      updateConnPrefs();
+      updateConnPrefs(true);
     }
 
-    Navigator.push(context, MaterialPageRoute(builder: (context) => MainInterface(mainController: _mainController,)));
+    Navigator.pushNamed(context, "/applications");
   }
 
   void displaySnackMessage(String message, {bool isError: false}) async {
@@ -773,8 +769,8 @@ class _AuthenticationWidget extends State<AuthenticationWidget> {
     if (!res) {
       displaySnackMessage("Could not connect to broker using those informations.", isError: true);
     } else {
-      updateConnPrefs();
-      Navigator.push(context, MaterialPageRoute(builder: (context) => MainInterface(mainController: _mainController,)));
+      updateConnPrefs(false);
+      Navigator.pushNamed(context, '/main');
     }
 
   }

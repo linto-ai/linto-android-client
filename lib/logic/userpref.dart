@@ -1,100 +1,122 @@
-import 'dart:convert';
 import 'dart:io';
 import 'dart:async';
-import 'package:flutter/services.dart' show rootBundle;
-import 'package:path_provider/path_provider.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
-const String PREFFILE = "userpref.json";
-const String TEMPLATEPATH = "assets/config/userpref.json";
 const String KEYSTOREPASSKEYC = "linto_cred_password";
 const String KEYSTOREPASSKEYM = "linto_mqtt_password";
 
 /// User preferences holds client and system preference and allows them to persist between sessions.
 class UserPreferences {
-  Map<String, dynamic> clientPreferences;
-  Map<String, dynamic> systemPreferences;
+
+  static const Map<String, dynamic> INITIAL_PREF = {
+    "first_login" : true,
+    "reconnect" : false,
+    "keep_info" : false,
+    "auth_cred" : true,
+    "cred_server" : "https://",
+    "cred_route" : "",
+    "cred_login" : "",
+    "cred_app" : "",
+    "direct_sn" : "",
+    "direct_ip" : "",
+    "direct_port" : "",
+    "direct_id" :"",
+    "direct_app" : "",
+    "notif_volume" : 1.0,
+    "speech_volume" : 1.0
+  };
+
   String passwordC;
   String passwordM;
+  SharedPreferences _preferences;
 
   File prefFile;
 
   FlutterSecureStorage storage = FlutterSecureStorage();
 
   Future<void> init() async {
-     await _loadPrefs();
+    _preferences = await SharedPreferences.getInstance();
+    if(!_preferences.containsKey("first_login")) {
+      setValues(INITIAL_PREF);
+    }
+    passwordC = await storage.read(key: KEYSTOREPASSKEYC);
+    passwordM = await storage.read(key: KEYSTOREPASSKEYM);
   }
 
-  /// Reads the user preferences from localpath/userprefs.json.
-  /// If the file does not exist, copy template from assets/config/userpref.json
-  Future<void> _loadPrefs() async {
-    if (prefFile == null) {
-      // fetch local path
-    }
-    var directory = await getApplicationDocumentsDirectory();
-    String localPath = directory.path;
-
-    print("Loading user preferences from userprefs.json ...");
-    prefFile = File("$localPath/userprefs.json");
-    await prefFile.exists().then((bool exist) async {
-      if (!exist) {
-        await createPrefs();
+  void setValues(Map<String, dynamic> values) {
+    for(String key in values.keys) {
+      switch(values[key].runtimeType) {
+        case bool: {
+          _preferences.setBool(key, values[key]);
+        }
+        break;
+        case int: {
+          _preferences.setInt(key, values[key]);
+        }
+        break;
+        case double: {
+          _preferences.setDouble(key, values[key]);
+        }
+        break;
+        case String: {
+          _preferences.setString(key, values[key]);
+        }
+        break;
+        default : {
+          continue;
+        }
       }
-    });
-
-    try {
-      await _readPrefs(prefFile);
-    } on Exception catch(error) {
-      print("Error while reading prefs: $error");
-      await createPrefs();
-      await _readPrefs(prefFile);
     }
     return;
   }
 
-  void _readPrefs(File prefFile) async {
-    String prefContent = await prefFile.readAsString();
-    var preferences = jsonDecode(prefContent);
-    clientPreferences = preferences["client"];
-    try {
-      passwordC = await storage.read(key: KEYSTOREPASSKEYC);
-      passwordM = await storage.read(key: KEYSTOREPASSKEYM);
-    } on Exception catch(error) {
-      print(error);
-      passwordC = "";
-      passwordM = "";
+  String getString (String key) {
+    return _preferences.containsKey(key) ? _preferences.getString(key) : null;
+  }
+
+  bool getBool (String key) {
+    return _preferences.containsKey(key) ? _preferences.getBool(key) : null;
+  }
+
+  double getDouble (String key) {
+    return _preferences.containsKey(key) ? _preferences.getDouble(key) : null;
+  }
+
+  void setValue(String key, var value) {
+    switch(value.runtimeType) {
+      case int: {
+        _preferences.setInt(key, value);
+      }
+      break;
+      case double: {
+        _preferences.setDouble(key, value);
+      }
+      break;
+      case String: {
+        _preferences.setString(key, value);
+      }
+      break;
+      default : {
+      }
     }
-    systemPreferences = preferences["system"];
-    print('User preferences loaded.');
   }
 
-  Future<void> createPrefs() async {
-    print('userprefs.json does not exist, creating from template ...');
-    String basePrefs =  await rootBundle.loadString('assets/config/userpref.json');
-    var serialized = jsonEncode(jsonDecode(basePrefs));
-    await prefFile.writeAsString(serialized);
-  }
-
-  void updatePasswordC(String password) async {
+  set passWordC(String password) {
     this.passwordC = password;
     storage.write(key: KEYSTOREPASSKEYC, value: password);
   }
 
-  void updatePasswordM(String password) async {
+  set passWordM(String password) {
     this.passwordM = password;
     storage.write(key: KEYSTOREPASSKEYM, value: password);
   }
 
-  /// Write current user preferences to the local preferences file.
-  void updatePrefs() async {
-    await prefFile.writeAsString(jsonEncode(this.toMap()));
-    print('User preferences updated');
-  }
-
   Map<String, dynamic> toMap() {
     Map<String, dynamic> content = Map<String, dynamic>();
-    content['client'] = clientPreferences;
-    content['system'] = systemPreferences;
+    for(String key in INITIAL_PREF.keys) {
+      content[key] = _preferences.get(key);
+    }
     return content;
   }
 

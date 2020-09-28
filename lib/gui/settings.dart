@@ -25,8 +25,8 @@ class _OptionInterface extends State<OptionInterface> {
     super.initState();
     _mainController = widget.mainController;
     _userPref = _mainController.userPreferences;
-    _notif = _userPref.systemPreferences["notificationVolume"] * 100;
-    _speech = _userPref.systemPreferences["speechVolume"]  * 100;
+    _notif = _userPref.getDouble("notif_volume") * 100;
+    _speech = _userPref.getDouble("speech_volume")  * 100;
   }
 
   @override
@@ -115,26 +115,25 @@ class _OptionInterface extends State<OptionInterface> {
   }
 
   Future onPop() async {
-    _userPref.systemPreferences["notificationVolume"] = _notif / 100;
-    _userPref.systemPreferences["speechVolume"] = _speech / 100;
-    _userPref.updatePrefs();
+    _userPref.setValue("notif_volume", _notif / 100);
+    _userPref.setValue("speech_volume", _speech / 100);
     Navigator.pop(context, false);
   }
-  }
+}
 
 Container sysInfo(MainController controller) {
   Map<String, String> entryKeys;
-  if (controller.userPreferences.clientPreferences["auth_cred"]) {
+  if (controller.userPreferences.getBool("auth_cred")) {
     entryKeys = {
       'Login': controller.client.login,
       'Server': controller.client.server,
-      'Scope' : controller.client.currentScope.name
+      'Application' : controller.client.currentScope.name
     };
   } else {
     entryKeys = {
       'Id' : controller.client.deviceID,
       'Broker': controller.client.brokerURL,
-      'Scope' : controller.client.currentScope.name
+      'Application' : controller.client.currentScope.name
     };
   }
 

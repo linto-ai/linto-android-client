@@ -48,6 +48,8 @@ class _RecorderInterface extends State<RecorderInterface> {
   StreamSubscription _positionSubscription;
   StreamSubscription _playerCompleteSubscription;
 
+  bool hasBeenSaved = false;
+
   @override
   void initState() {
     super.initState();
@@ -65,21 +67,34 @@ class _RecorderInterface extends State<RecorderInterface> {
           if (state == RecorderState.RECORDING) stopRecording();
           else if (state == RecorderState.PLAYING) stopPlaying();
           String filename;
-          if (state != RecorderState.IDLE) {
+          if (state != RecorderState.IDLE && !hasBeenSaved) {
             filename = await saveDialog(context, "Save recorded audio ? (Will be saved in Documents/)");
             if (filename != null) {
               await saveFile(filename);
             }
           }
-          if(updateTimer != null) {
-            updateTimer.cancel();
-          }
+          updateTimer?.cancel();
+
           return true;
         },
         child: Scaffold(
             key: _scaffoldKey,
             appBar: AppBar(
               title: Text("Recorder"),
+              actions: [
+                IconButton(
+                  icon: const Icon(Icons.save),
+                  onPressed: hasBeenSaved || state != RecorderState.PLAYINGSTOPPED ? null : () async {
+                     String filename = await saveDialog(context, "Save recorded audio ? (Will be saved in Documents/)");
+                     if (filename != null) {
+                       await saveFile(filename);
+                       setState(() {
+                         hasBeenSaved = true;
+                       });
+
+                     }
+                  },)
+              ],
             ),
             body: SafeArea(
               child: Center(
@@ -215,6 +230,7 @@ class _RecorderInterface extends State<RecorderInterface> {
      }
      setState(() {
        state = RecorderState.RECORDING;
+       hasBeenSaved = false;
      });
      timeWatch.start();
      updateTimer = Timer.periodic(Duration(seconds: 1), (timer) { updateDuration();});

@@ -19,7 +19,7 @@ enum AuthenticationStep{
 }
 
 class LinTOClient {
-  static const String CLIENT_VERSION = "0.2.1";
+  static const String CLIENT_VERSION = "0.2.2";
 
   final String APIROUTES = "/auths";
   final String APIAUTHSUFFIX = "/android/login";
@@ -84,6 +84,10 @@ class LinTOClient {
     return _sessionID;
   }
 
+  String get version {
+    return LinTOClient.CLIENT_VERSION;
+  }
+
   set onMQTTMsg(MQTTMessageCallback cb) {
     mqttClient.onMessage = cb;
   }
@@ -117,6 +121,8 @@ class LinTOClient {
       throw ClientErrorException('0x0009');
     } on SocketException catch (_) {
       throw ClientErrorException('0x0010');
+    } on Exception catch (_) {
+      throw ClientErrorException('0xFFFF');
     }
     switch(response.statusCode) {
       case 200: {
@@ -239,7 +245,7 @@ class LinTOClient {
         List<dynamic> res;
         try {
           res = json.decode(response.body);
-          scopes = res.map((scope){return ApplicationScope(scope["topic"], scope["name"], scope["description"]);}).toList();
+          scopes = res.map((scope){return ApplicationScope(scope["topic"], scope["name"] ?? "No name.", scope["description"] ?? "No description");}).toList();
         } on Exception catch (_) {
           throw ClientErrorException('0x0007');
         }
@@ -285,28 +291,28 @@ class LinTOClient {
 
   Future<AuthenticationStep> reconnect(UserPreferences userPrefs) async {
     disconnect();
-    return userPrefs.clientPreferences["auth_cred"] ? credentialReconnect(userPrefs) : directReconnect(userPrefs);
+    return userPrefs.getBool("auth_cred") ? credentialReconnect(userPrefs) : directReconnect(userPrefs);
   }
 
   Future<AuthenticationStep> credentialReconnect(UserPreferences userPrefs) async {
     AuthenticationStep step = AuthenticationStep.SERVERSELECTION;
-    var prefs = userPrefs.clientPreferences["credentials"];
     List<dynamic> routes;
     try {
-      routes = await requestRoutes(prefs["last_server"]);
-    } on ClientErrorException catch(error) {
+      routes = await requestRoutes(userPrefs.getString("cred_server"));
+    } on ClientErrorException catch(_) {
       return step;
     }
 
-    if (routes.map((e) => e['basePath']).contains(prefs["last_route"]['basePath'])){
-      setAuthRoute(prefs["last_route"]);
-      step = AuthenticationStep.CREDENTIALS;
-    } else {
-      return step;
+    for (Map<String, dynamic> route in routes) {
+      if(route['basePath'] == userPrefs.getString("cred_route")) {
+        setAuthRoute(route);
+        step = AuthenticationStep.CREDENTIALS;
+      }
     }
+    if (step == AuthenticationStep.SERVERSELECTION) return step;
 
     try {
-      await requestAuthentification(prefs["last_login"], userPrefs.passwordC);
+      await requestAuthentification(userPrefs.getString("cred_login"), userPrefs.passwordC);
     } on ClientErrorException catch(error) {
       return step;
     }
@@ -320,11 +326,11 @@ class LinTOClient {
 
     step = AuthenticationStep.AUTHENTICATED;
 
-    if ( ! scopes.map((e) => e.topic).contains(prefs["last_scope"])){
+    if ( ! scopes.map((e) => e.topic).contains(userPrefs.getString("cred_app"))){
       return step;
     }
 
-    var success = await setScope(getScopeByTopic(prefs["last_scope"]));
+    var success = await setScope(getScopeByTopic(userPrefs.getString("cred_app")));
     if (!success) {
       return step;
     }
@@ -332,8 +338,12 @@ class LinTOClient {
   }
 
   Future<AuthenticationStep> directReconnect(UserPreferences userPrefs) async {
-    var prefs = userPrefs.clientPreferences["direct"];
-    bool res = await directConnexion(prefs["broker_ip"], prefs["broker_port"], prefs["broker_id"], userPrefs.passwordM, prefs["serial_number"], prefs["scope"], true);
+    bool res = await directConnexion(userPrefs.getString("direct_ip"),
+                                     userPrefs.getString("direct_port"),
+                                     userPrefs.getString("direct_id"),
+                                     userPrefs.passwordM,
+                                     userPrefs.getString("direct_sn"),
+                                     userPrefs.getString("direct_app"), true);
     if (res) {
       return AuthenticationStep.CONNECTED;
     } else {

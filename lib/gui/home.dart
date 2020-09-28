@@ -54,17 +54,17 @@ class _Home extends State<Home> {
   }
 
   Future startup() async {
-    var clientPrefs;
+    var preferences;
     AuthenticationStep resultStep = AuthenticationStep.WELCOME;
     _mainController.userPreferences.init().whenComplete(() async {
-      clientPrefs = _mainController.userPreferences.clientPreferences;
+      preferences = _mainController.userPreferences;
       //print(_mainController.userPreferences);
-      if (clientPrefs['first_login']) {
+      if (preferences.getBool('first_login') ?? true) {
         Navigator.push(context, MaterialPageRoute(builder: (context) =>
             Login(mainController: _mainController,
               step: AuthenticationStep.WELCOME,)));
         return;
-      } else if (!clientPrefs['reconnect']){
+      } else if (!preferences.getBool('reconnect')){
         await Navigator.push(context, MaterialPageRoute(builder: (context) =>
             Login(mainController: _mainController,
               step: AuthenticationStep.SERVERSELECTION,)));
@@ -80,13 +80,11 @@ class _Home extends State<Home> {
         }
 
         if (resultStep == AuthenticationStep.CONNECTED) {
-          await Navigator.push(context, MaterialPageRoute(builder: (context) => MainInterface(mainController: _mainController,)));
+          Navigator.pushNamed(context, "/applications");
+          Navigator.pushNamed(context, "/main");
         } else {
           await Navigator.push(context, MaterialPageRoute(builder: (context) => Login(mainController: _mainController, step: resultStep)),);
         }
-      }
-      while (true) {
-        await Navigator.push(context, MaterialPageRoute(builder: (context) => Login(mainController: _mainController, step: AuthenticationStep.SERVERSELECTION)));
       }
     });
   }

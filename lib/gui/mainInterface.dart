@@ -1,7 +1,4 @@
-import 'dart:math';
-
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:linto_flutter_client/client/client.dart';
 import 'package:linto_flutter_client/gui/clock.dart';
 import 'package:linto_flutter_client/gui/meeting.dart';
@@ -10,7 +7,6 @@ import 'package:linto_flutter_client/gui/settings.dart';
 import 'package:linto_flutter_client/gui/slidingPanelContent.dart';
 import 'package:linto_flutter_client/logic/maincontroller.dart';
 import 'package:sliding_up_panel/sliding_up_panel.dart';
-import 'package:linto_flutter_client/gui/controls.dart';
 import 'package:linto_flutter_client/logic/uicontroller.dart';
 import 'package:linto_flutter_client/gui/webviews.dart';
 import 'package:linto_flutter_client/gui/dialogs.dart';
@@ -46,12 +42,21 @@ class _MainInterface extends State<MainInterface> implements VoiceUIController{
   Widget build(BuildContext context) {
    Orientation orientation = MediaQuery.of(context).orientation;
    return new WillPopScope(
-     onWillPop: () async => false,
+     onWillPop: () async {
+       Navigator.popAndPushNamed(context, '/applications');
+       return true;
+     },
      child: Scaffold(
        key: _scaffoldKey,
        appBar: AppBar(
          title: Text(currentApplication.name),
-         automaticallyImplyLeading: false,
+         automaticallyImplyLeading: true,
+         leading: IconButton(
+           icon: const Icon(Icons.apps),
+           onPressed: () {
+             Navigator.popAndPushNamed(context, '/applications');
+           },
+         ),
          actions: <Widget>[
            IconButton(
               icon: const Icon(Icons.menu),
@@ -104,11 +109,9 @@ class _MainInterface extends State<MainInterface> implements VoiceUIController{
                  onPressed: () async {
                    await confirmDialog(context, "Disconnect ?").then((bool toDisconnect) {
                      if (toDisconnect) {
-                       _mainController.userPreferences
-                           .clientPreferences["keep_info"] = false;
-                       _mainController.userPreferences.updatePrefs();
+                       _mainController.userPreferences.setValue("reconnect", false);
                        _mainController.disconnect();
-                       Navigator.pop(context);
+                       Navigator.popAndPushNamed(context, '/login');
                      }
                   });
                  },
@@ -163,20 +166,6 @@ class _MainInterface extends State<MainInterface> implements VoiceUIController{
                                onPressed: () => displayMeeting(),
                              ),
                              FlatButton(
-                               child: FittedBox(
-                                 fit: BoxFit.fill,
-                                 child: Icon(Icons.record_voice_over, color: Color.fromARGB(255, 60,187,242), size: 80,),
-                               ),
-                               onPressed: () async => await infoDialog(context, "Not Implemented"),
-                             ),
-                             FlatButton(
-                                 child: FittedBox(
-                                     fit: BoxFit.fill,
-                                     child: Icon(Icons.recent_actors, color: Color.fromARGB(255, 60,187,242), size: 80,)
-                                 ),
-                               onPressed: () async => await infoDialog(context, "Not Implemented"),
-                             ),
-                             FlatButton(
                                  child: FittedBox(
                                      fit: BoxFit.fill,
                                      child: Icon(Icons.mic_none, color: Color.fromARGB(255, 60,187,242), size: 80,)
@@ -188,7 +177,7 @@ class _MainInterface extends State<MainInterface> implements VoiceUIController{
                                      fit: BoxFit.fill,
                                      child: Icon(Icons.help_outline, color: Color.fromARGB(255, 60,187,242), size: 80,)
                                  ),
-                               onPressed: () async => await infoDialog(context, "Not Implemented"),
+                               onPressed: () async => await aboutDialog(context, _mainController.client.version),
                              )
                            ],
                          ),
@@ -348,7 +337,7 @@ class _MainInterface extends State<MainInterface> implements VoiceUIController{
 
   @override
   Future<void> onDisconnect() async{
-    Navigator.pop(context, false);
+    Navigator.popAndPushNamed(context, '/login');
   }
 
   @override

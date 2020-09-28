@@ -1,11 +1,14 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:linto_flutter_client/client/client.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/services.dart' show FilteringTextInputFormatter;
 
 
 /// Scope selection dialog
-Future<ApplicationScope> showScopeDialog(BuildContext context, String title, List<ApplicationScope> options) async {
+Future<ApplicationScope> showScopesDialog(BuildContext context, String title, List<ApplicationScope> options) async {
   var scope = await showDialog<ApplicationScope>(
       context: context,
       builder: (BuildContext context) {
@@ -16,6 +19,26 @@ Future<ApplicationScope> showScopeDialog(BuildContext context, String title, Lis
       }
   );
   return scope;
+}
+
+Future<bool> showScopeDialog(BuildContext context, ApplicationScope scope) async {
+  var useScope = await showDialog<bool>(
+    context: context,
+    builder: (BuildContext context) {
+      return SimpleDialog(
+        title: Text(scope.name, textAlign: TextAlign.center,),
+        contentPadding: EdgeInsets.all(20),
+        children: [
+          Text(scope.description, maxLines: 5,),
+          RaisedButton(
+            child: Text("Use this application"),
+            onPressed: () => Navigator.pop(context, true),
+          ),
+          ]
+      );
+    }
+  );
+  return useScope;
 }
 
 /// Scope selection items
@@ -213,5 +236,64 @@ Future<Map<String, dynamic>> newMeetingDialog(BuildContext context) async {
         ],
       );
     }
+  );
+}
+
+Future<void> aboutDialog(BuildContext context, String clientVersion) async {
+  return await showDialog<void>(
+      context: context,
+      builder: (BuildContext context) {
+        return SimpleDialog(
+          contentPadding: EdgeInsets.all(20),
+          title: Text("LinTO Android Client"),
+          children: <Widget>[
+            Text("Client version: $clientVersion"),
+            Text(" "),
+            RichText(
+              text: TextSpan(
+                text: 'An issue ? Report on ',
+                style: TextStyle(color: Colors.black),
+                children: [
+                  TextSpan(
+                    text: "github",
+                    style: TextStyle(color: Colors.blue),
+                    recognizer: TapGestureRecognizer()
+                      ..onTap = () { launch('https://github.com/linto-ai/linto-android-client/issues');
+                      },
+                  )
+                ],
+
+              )),
+            Text(" "),
+            RichText(
+                text: TextSpan(
+                  text: 'More about LinTO on ',
+                  style: TextStyle(color: Colors.black),
+                  children: [
+                    TextSpan(
+                      text: "linto.ai",
+                      style: TextStyle(color: Colors.blue),
+                      recognizer: TapGestureRecognizer()
+                        ..onTap = () { launch('https://linto.ai');
+                        },
+                    )
+                  ],
+
+                )),
+            Text(" "),
+            FlatButton(
+              child: Image.asset('assets/icons/linagora-labs.png',
+                fit: BoxFit.contain,
+                width: 200,),
+                onPressed: () => launch("https://research.linagora.com"),
+                ),
+            SimpleDialogOption(
+                child: Text("Dismiss", textAlign: TextAlign.right,),
+                onPressed: () {
+                  Navigator.pop(context, true);
+                }),
+          ],
+        );
+      }
   );
 }
