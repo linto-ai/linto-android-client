@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:linto_flutter_client/client/client.dart';
 import 'package:linto_flutter_client/gui/clock.dart';
 import 'package:linto_flutter_client/gui/meeting.dart';
-import 'package:linto_flutter_client/gui/recorder.dart';
 import 'package:linto_flutter_client/gui/settings.dart';
 import 'package:linto_flutter_client/gui/slidingPanelContent.dart';
 import 'package:linto_flutter_client/logic/maincontroller.dart';
@@ -27,8 +26,9 @@ class _MainInterface extends State<MainInterface> implements VoiceUIController{
   SlidingPanel panel = SlidingPanel();
   ApplicationScope currentApplication;
 
+  bool isListening = true;
 
-  PanelController _controller = PanelController();
+  PanelController _endDrawerController = PanelController();
   @override
   void initState() {
     super.initState();
@@ -36,8 +36,20 @@ class _MainInterface extends State<MainInterface> implements VoiceUIController{
     _mainController.currentUI = this;
     _mainController.init();
     currentApplication = _mainController.client.currentScope;
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if(_mainController.userPreferences.getBool("first_login")) {
+        await helpDialog(context, MainAxisAlignment.center, "This is LinTO main interface. You can interact with your assistant by saying \"LinTO !\"");
+        await helpDialog(context, MainAxisAlignment.center, "On the top left corner your can change the current application.");
+        await helpDialog(context, MainAxisAlignment.center, "On the top right corner your can access the application settings.");
+        await helpDialog(context, MainAxisAlignment.center, "You can access the tools on the botton left corner.");
+        await helpDialog(context, MainAxisAlignment.center, "Tap on LinTO to start an vocal interaction.");
+        await helpDialog(context, MainAxisAlignment.center, "Don't want to be listenned ? Toggle the microphone on the bottom right icon.");
+        _mainController.userPreferences.setValue("first_login", false);
+      }
+    });
 
   }
+
   @override
   Widget build(BuildContext context) {
    Orientation orientation = MediaQuery.of(context).orientation;
@@ -52,7 +64,7 @@ class _MainInterface extends State<MainInterface> implements VoiceUIController{
          title: Text(currentApplication.name),
          automaticallyImplyLeading: true,
          leading: IconButton(
-           icon: const Icon(Icons.apps),
+           icon: const Icon(Icons.storage),
            onPressed: () {
              Navigator.popAndPushNamed(context, '/applications');
            },
@@ -66,6 +78,66 @@ class _MainInterface extends State<MainInterface> implements VoiceUIController{
            )
          ],
        ),
+       drawer: Container(
+         width: 120,
+         child: Drawer(
+           child: ListView(
+             padding: EdgeInsets.zero,
+             children: [
+               Container(
+                 height: 100,
+                 child: DrawerHeader(
+                   child: Column(
+                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                     children: <Widget>[
+                       Text("Tools", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold))
+                     ],
+                   ),
+                   decoration: BoxDecoration(
+                       color: Colors.lightBlue
+                   ),
+                 ),
+               ),
+               Column(
+                 children: [
+                   Text("Recorder", style: TextStyle(color: Colors.lightBlue, fontSize: 18, fontWeight: FontWeight.bold),),
+                   FlatButton(
+                     child: FittedBox(
+                         fit: BoxFit.fill,
+                         child: Icon(Icons.mic_none, color: Color.fromARGB(255, 60,187,242), size: 80,)
+                     ),
+                     onPressed: ()  => displayRecorder(),
+                   ),
+                 ],
+               ),
+               Column(
+                 children: [
+                   Text("Dictation", style: TextStyle(color: Colors.lightBlue, fontSize: 18, fontWeight: FontWeight.bold),),
+                   FlatButton(
+                     child: FittedBox(
+                         fit: BoxFit.fill,
+                         child: Icon(Icons.record_voice_over, color: Color.fromARGB(255, 60,187,242), size: 80,)
+                     ),
+                     onPressed: () => Navigator.popAndPushNamed(context, '/dictation'),
+                   ),
+                 ],
+               ),
+               Column(
+                 children: [
+                   Text("About", style: TextStyle(color: Colors.lightBlue, fontSize: 18, fontWeight: FontWeight.bold),),
+                   FlatButton(
+                     child: FittedBox(
+                         fit: BoxFit.fill,
+                         child: Icon(Icons.help_outline, color: Color.fromARGB(255, 60,187,242), size: 80,)
+                     ),
+                     onPressed: () async => await aboutDialog(context, _mainController.client.version),
+                   )
+                 ],
+               ),
+             ],
+           ),
+         ),
+       ),
        endDrawer: Drawer(
          child: ListView(
            padding: EdgeInsets.zero,
@@ -75,14 +147,14 @@ class _MainInterface extends State<MainInterface> implements VoiceUIController{
                  child: Column(
                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                    children: <Widget>[
-                     Text("Manage your device.")
+                     Text("Manage your device", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),)
                    ],
                  ),
                  decoration: BoxDecoration(
                      color: Colors.lightBlue
                  ),
                ),
-               height: 120,
+               height: 100,
              ),
              Text("Current application:"),
              Card(
@@ -109,7 +181,6 @@ class _MainInterface extends State<MainInterface> implements VoiceUIController{
                  onPressed: () async {
                    await confirmDialog(context, "Disconnect ?").then((bool toDisconnect) {
                      if (toDisconnect) {
-                       _mainController.userPreferences.setValue("reconnect", false);
                        _mainController.disconnect();
                        Navigator.popAndPushNamed(context, '/login');
                      }
@@ -160,36 +231,44 @@ class _MainInterface extends State<MainInterface> implements VoiceUIController{
                            crossAxisSpacing: 10,
                            mainAxisSpacing: 10,
                            crossAxisCount: orientation == Orientation.portrait ? 3 : 5,
-                           children: <Widget>[
-                             FlatButton(
-                               child: Image.asset('assets/icons/meeting_blue.png', height: 80, width: 80,),
-                               onPressed: () => displayMeeting(),
-                             ),
-                             FlatButton(
-                                 child: FittedBox(
-                                     fit: BoxFit.fill,
-                                     child: Icon(Icons.mic_none, color: Color.fromARGB(255, 60,187,242), size: 80,)
-                                 ),
-                               onPressed: () async => await displayRecorder(),
-                             ),
-                             FlatButton(
-                                 child: FittedBox(
-                                     fit: BoxFit.fill,
-                                     child: Icon(Icons.help_outline, color: Color.fromARGB(255, 60,187,242), size: 80,)
-                                 ),
-                               onPressed: () async => await aboutDialog(context, _mainController.client.version),
-                             )
-                           ],
+                           children: <Widget>[],
                          ),
                        ),
                        flex: 3,
                      ),
                      Expanded(
-                       child: FlatButton(
-                         child: Image.asset('assets/icons/linto_alpha.png',
-                             height: orientation == Orientation.portrait ? 80: 80,
-                             fit: BoxFit.contain),
-                         onPressed: () => onLinToClicked(),
+                       child: Row(
+                         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                         crossAxisAlignment: orientation == Orientation.portrait? CrossAxisAlignment.center: CrossAxisAlignment.start,
+                         children: [
+                           FlatButton(
+                             child: FittedBox(
+                                 fit: BoxFit.fill,
+                                 child: Icon(Icons.apps, color: Color.fromARGB(255, 60,187,242), size: 60,)
+                             ),
+                             onPressed: () => _scaffoldKey.currentState.openDrawer(),
+                           ),
+                           FlatButton(
+                             child: Image.asset('assets/icons/linto_alpha.png',
+                                 height: orientation == Orientation.portrait ? 100: 100,
+                                 fit: BoxFit.contain),
+                             onPressed: () => onLinToClicked(),
+                             onLongPress: null, // Mute ?
+                           ),
+                           FlatButton(
+                             child:  Image.asset(isListening ? 'assets/icons/mic_on.png' : 'assets/icons/mic_off.png',
+                                 height: 60,
+                                 fit: BoxFit.contain),
+                             onPressed: () {
+                               setState(() {
+                                 isListening = !isListening;
+                                 isListening ? _mainController.audioManager.startDetecting() : _mainController.audioManager.stopDetecting();
+                               });
+                             },
+                             onLongPress: null, // Mute ?
+                           ),
+
+                         ]
                        ),
                        flex: orientation == Orientation.portrait ? 2 : 2,
                      ),
@@ -201,7 +280,7 @@ class _MainInterface extends State<MainInterface> implements VoiceUIController{
                minHeight: 0,
                maxHeight: MediaQuery.of(context).size.height * 0.5,
                backdropEnabled: true,
-               controller: _controller,
+               controller: _endDrawerController,
              ),
            )
        ),
@@ -210,11 +289,11 @@ class _MainInterface extends State<MainInterface> implements VoiceUIController{
   }
 
   void expandPanel(){
-  _controller.open();
+  _endDrawerController.open();
   }
 
   void closePanel(){
-  _controller.close();
+  _endDrawerController.close();
   }
 
   void onLinToClicked(){
@@ -226,7 +305,9 @@ class _MainInterface extends State<MainInterface> implements VoiceUIController{
   }
 
   void onPanelClosed() {
+    panel.displayLoading();
     _mainController.abord();
+    isListening ? _mainController.audioManager.startDetecting() : _mainController.audioManager.stopDetecting();
   }
 
   void displayMeeting() async{
@@ -235,14 +316,13 @@ class _MainInterface extends State<MainInterface> implements VoiceUIController{
     Navigator.push(context, MaterialPageRoute(builder: (context) => MeetingInterface(ret)));
   }
 
-  void notImplementedDisplay() async {
-
-  }
-
   void displayRecorder() async {
     _mainController.audioManager.stopDetecting();
-    await Navigator.push(context, MaterialPageRoute(builder: (context) => RecorderInterface(_mainController.audioManager, _mainController.audioPlayer)));
-    _mainController.audioManager.startDetecting();
+    await Navigator.pushNamed(context, '/recorder');
+    if(isListening) {
+      _mainController.audioManager.startDetecting();
+    }
+
   }
 
   void displaySettings() async {

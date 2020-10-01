@@ -1,8 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
-import 'package:flutter/material.dart';
-import 'package:flutter/services.dart' show rootBundle;
 import 'package:http/http.dart' as http;
 import 'package:linto_flutter_client/client/mqttClientWrapper.dart';
 import 'package:linto_flutter_client/logic/customtypes.dart';
@@ -19,16 +17,16 @@ enum AuthenticationStep{
 }
 
 class LinTOClient {
-  static const String CLIENT_VERSION = "0.2.2";
+  static const String CLIENT_VERSION = "0.2.3";
 
-  final String APIROUTES = "/auths";
-  final String APIAUTHSUFFIX = "/android/login";
-  final String APILOGOUTSUFFIX = "/android/logout";
-  final String APISCOPES = "/scopes";
-  final String APIPREFIX = "/overwatch";
+  static const String APIROUTES = "/auths";
+  static const String APIAUTHSUFFIX = "/android/login";
+  static const String APILOGOUTSUFFIX = "/android/logout";
+  static const String APISCOPES = "/scopes";
+  static const String APIPREFIX = "/overwatch";
 
-  final String MQTTINGRESS = '/tolinto';
-  final String MQTTEGRESS = '/fromlinto';
+  static const String MQTTINGRESS = '/tolinto';
+  static const String MQTTEGRESS = '/fromlinto';
 
   String _token;
   String _refreshToken;
@@ -36,7 +34,6 @@ class LinTOClient {
   String _authServURI;
 
   String _login;
-  String _password;
   String _mqttHost;
   String _mqttPort;
   String _mqttLogin;
@@ -90,22 +87,6 @@ class LinTOClient {
 
   set onMQTTMsg(MQTTMessageCallback cb) {
     mqttClient.onMessage = cb;
-  }
-
-  /// Retrieve last used login from config file
-  Future<String> getLastUser() async {
-    String content =  await rootBundle.loadString('assets/config/config.json');
-    var data = json.decode(content);
-    String lastlog = data['client']['last_login'];
-    return lastlog;
-  }
-
-  /// Retrieve last used server from config file
-  Future<String> getLastServer() async {
-    String content =  await rootBundle.loadString('assets/config/config.json');
-    var data = json.decode(content);
-    String lastlog = data['client']['last_server'];
-    return lastlog;
   }
 
   /// Ask server at [server] which authentication method are available.
@@ -202,7 +183,6 @@ class LinTOClient {
           throw ClientErrorException('0x0007');
         }
         _login = login;
-        _password = password;
         return true;
       }
       break;
@@ -284,8 +264,8 @@ class LinTOClient {
     return _authenticated;
   }
 
-  Future<bool> changeScope(ApplicationScope scope) async {
-    await mqttClient.disconnect();
+  Future<void> changeScope(ApplicationScope scope) async {
+    mqttClient.disconnect();
     await setScope(scope);
   }
 
@@ -313,14 +293,14 @@ class LinTOClient {
 
     try {
       await requestAuthentification(userPrefs.getString("cred_login"), userPrefs.passwordC);
-    } on ClientErrorException catch(error) {
+    } on ClientErrorException catch(_) {
       return step;
     }
 
     var scopes;
     try {
       scopes = await requestScopes();
-    } on ClientErrorException catch(error) {
+    } on ClientErrorException catch(_) {
       return step;
     }
 
@@ -351,7 +331,7 @@ class LinTOClient {
     }
   }
 
-  void connectToBroker({bool directConnexion = false}) async {
+  Future<void> connectToBroker({bool directConnexion = false}) async {
     mqttClient = MQTTClientWrapper((msg) => print("Error : $msg"), (msg) => print("Message ! $msg"));
     Map<String, dynamic> deviceInfos = await getDeviceInfo();
     await mqttClient.setupClient(_mqttHost,
@@ -367,7 +347,7 @@ class LinTOClient {
   }
 
   void sendMessage(Map<String, dynamic> message, {String subTopic : ""}) {
-    message['auth_token'] = "Android ${_token}";
+    message['auth_token'] = "Android $_token";
     mqttClient.publish("$_publishingTopic$subTopic", message);
     print("Send message on $_publishingTopic$subTopic");
   }
@@ -470,5 +450,8 @@ class ApplicationScope {
   bool operator==(other) {
     return other.topic == this.topic;
   }
+
+  @override
+  int get hashCode => topic.hashCode;
 
 }

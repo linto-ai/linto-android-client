@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:linto_flutter_client/gui/applications.dart';
+import 'package:linto_flutter_client/gui/dictation.dart';
 import 'package:linto_flutter_client/gui/home.dart';
 import 'package:linto_flutter_client/gui/login.dart';
 import 'package:linto_flutter_client/gui/mainInterface.dart';
+import 'package:linto_flutter_client/gui/recorder.dart';
 import 'package:linto_flutter_client/logic/maincontroller.dart';
 
 
@@ -23,6 +25,8 @@ class MyApp extends StatelessWidget {
         '/login' : (context) => Login(mainController: mainController,),
         '/applications' : (context) => Applications(mainController: mainController,),
         '/main' : (context) => MainInterface(mainController: mainController,),
+        '/recorder' : (context) => RecorderInterface(mainController.audioManager, mainController.audioPlayer),
+        '/dictation' : (context) => DictationInterface(mainController.audioManager),
       }
     );
   }

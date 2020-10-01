@@ -297,3 +297,48 @@ Future<void> aboutDialog(BuildContext context, String clientVersion) async {
       }
   );
 }
+
+Future<void> helpDialog(BuildContext context, MainAxisAlignment position, String text) async {
+  const double imageSize = 80.0;
+  return await showDialog<void>(
+    barrierDismissible: true,
+    context: context,
+    builder: (BuildContext context) {
+      return new Column(
+        mainAxisAlignment: position,
+        children: [
+          GestureDetector(
+            onTap: () => Navigator.pop(context),
+            child: Stack(
+              children: [
+                Padding(
+                  padding: EdgeInsets.only(top: imageSize, bottom: 20, left: 20, right: 20),
+                  child: Container(
+                    height: 180,
+                    width: MediaQuery.of(context).size.width - 20,
+                    padding: EdgeInsets.only(top: imageSize / 4 + 10, bottom: 10, left: 10, right: 10),
+                    decoration: BoxDecoration(
+                      color: Color.fromARGB(220, 255, 255, 255),
+                      border: Border.all(
+                          color: Colors.lightBlue,
+                          width: 2
+                      ),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(text,
+                      style: TextStyle(color: Colors.black, fontSize: 18, fontWeight: FontWeight.normal, decoration: TextDecoration.none), maxLines: 5,),
+                  ),
+                ),
+                Positioned(
+                  child: Image.asset('assets/icons/linto_alpha.png', height: 100,),
+                  left: MediaQuery.of(context).size.width / 2 - imageSize / 2 - 10,
+                  top: imageSize / 4 - 10,
+                )
+              ],
+            ),
+          )
+        ]
+      );
+    }
+  );
+}

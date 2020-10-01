@@ -6,8 +6,6 @@ import 'package:linto_flutter_client/client/client.dart' show AuthenticationStep
 import 'package:linto_flutter_client/gui/dialogs.dart';
 import 'package:linto_flutter_client/logic/customtypes.dart';
 import 'package:linto_flutter_client/logic/maincontroller.dart';
-import 'package:linto_flutter_client/gui/mainInterface.dart';
-import 'package:linto_flutter_client/gui/applications.dart' show Applications;
 
 class Login extends StatefulWidget {
   final MainController mainController;
@@ -176,6 +174,25 @@ class _AuthenticationWidget extends State<AuthenticationWidget> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: <Widget>[
+          Expanded(
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                Spacer(),
+                FlatButton(
+                  child: FittedBox(
+                      fit: BoxFit.fill,
+                      child: Icon(Icons.help_outline, color: Color.fromARGB(255, 60,187,242), size: 40,)
+                  ),
+                  onPressed: () async {
+                    await helpDialog(context, MainAxisAlignment.end, "To connect your personnal assistant, please enter the application server address.\nThen press OK");
+                    await helpDialog(context, MainAxisAlignment.start, "If you have been provided with direct connexion informations click on \"More options\"");
+                  },
+                )
+              ],
+
+            ),
+          ),
           Spacer(),
           Expanded(
             child: AutoSizeText("Connect to the application server",
@@ -257,12 +274,29 @@ class _AuthenticationWidget extends State<AuthenticationWidget> {
     return Expanded(
         child: Form(
           key: _formCKey,
-          child: Flex(
-            direction: MediaQuery.of(context).orientation == Orientation.portrait ? Axis.vertical : Axis.horizontal,
+          child: Column(
             children: <Widget>[
-              Container(
-
-                width: MediaQuery.of(context).size.width * (MediaQuery.of(context).orientation == Orientation.portrait ? 0.9 : 0.4),
+              Expanded(
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    Spacer(),
+                    FlatButton(
+                      child: FittedBox(
+                          fit: BoxFit.fill,
+                          child: Icon(Icons.help_outline, color: Color.fromARGB(255, 60,187,242), size: 40,)
+                      ),
+                      onPressed: () async {
+                        await helpDialog(context, MainAxisAlignment.start, "You should have been provided with credential.");
+                        await helpDialog(context, MainAxisAlignment.end, "Enter your credentials and hit \"Login\"");
+                      },
+                    )
+                  ],
+                ),
+                flex: 1,
+              ),
+              Expanded(
+                flex : 10,
                 child: Column(
                   children: <Widget>[
                     TextFormField(
@@ -360,8 +394,8 @@ class _AuthenticationWidget extends State<AuthenticationWidget> {
                   ],
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 ),
-                padding: EdgeInsets.all(20),
-              )
+              ),
+              Spacer(),
             ],
           ),
         )
@@ -691,7 +725,6 @@ class _AuthenticationWidget extends State<AuthenticationWidget> {
   void updateConnPrefs(bool cred) {
     _mainController.userPreferences.setValues(
       {
-        "first_login" : false,
         "keep_info" : _remember,
         "reconnect" : true,
       }
@@ -772,6 +805,6 @@ class _AuthenticationWidget extends State<AuthenticationWidget> {
       updateConnPrefs(false);
       Navigator.pushNamed(context, '/main');
     }
-
   }
+
 }

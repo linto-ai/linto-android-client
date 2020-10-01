@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:linto_flutter_client/gui/dialogs.dart' show showScopeDialog;
+import 'package:linto_flutter_client/gui/dialogs.dart' show showScopeDialog, helpDialog;
 import 'package:linto_flutter_client/client/client.dart';
 import 'package:linto_flutter_client/logic/maincontroller.dart';
 import 'package:linto_flutter_client/gui/mainInterface.dart';
@@ -40,8 +40,20 @@ class _Applications extends State<Applications> {
             title: Text("Applications"),
             leading: IconButton(
               icon: const Icon(Icons.close),
+              onPressed: () {
+                _mainController.disconnect();
+                Navigator.pop(context);
+              },
             ),
             actions: [
+              IconButton(
+                icon: const Icon(Icons.help_outline),
+                onPressed: () async {
+                  await helpDialog(context, MainAxisAlignment.start, "Here you can choose an application.\nSelect an application to access its description. Long press to choose it.");
+                  await helpDialog(context, MainAxisAlignment.center, "Applications offer different sets of skills for different usages or locations.");
+
+                },
+              ),
               IconButton(
                 icon: const Icon(Icons.refresh),
                 onPressed: () => refreshList(),

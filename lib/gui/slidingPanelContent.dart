@@ -15,6 +15,10 @@ class SlidingPanel extends StatefulWidget {
     state.displayText(msg);
   }
 
+  void displayLoading() {
+    state.displayLoadingAnimation();
+  }
+
   void startSpeaking() {
 
   }
