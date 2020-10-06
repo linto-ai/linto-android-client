@@ -21,11 +21,9 @@ class _Home extends State<Home> {
   //
   // Note: This is a `GlobalKey<FormState>`,
   // not a GlobalKey<MyCustomFormState>
-  MainController _mainController;
 
   void initState() {
     super.initState();
-    _mainController = widget.mainController;
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       startup();
     });
@@ -56,34 +54,34 @@ class _Home extends State<Home> {
   Future startup() async {
     var preferences;
     AuthenticationStep resultStep = AuthenticationStep.WELCOME;
-    _mainController.userPreferences.init().whenComplete(() async {
-      preferences = _mainController.userPreferences;
+    widget.mainController.userPreferences.init().whenComplete(() async {
+      preferences = widget.mainController.userPreferences;
       //print(_mainController.userPreferences);
       if (preferences.getBool('first_login') ?? true) {
         Navigator.push(context, MaterialPageRoute(builder: (context) =>
-            Login(mainController: _mainController,
+            Login(mainController: widget.mainController,
               step: AuthenticationStep.WELCOME,)));
         return;
       } else if (!preferences.getBool('reconnect')){
         await Navigator.push(context, MaterialPageRoute(builder: (context) =>
-            Login(mainController: _mainController,
+            Login(mainController: widget.mainController,
               step: AuthenticationStep.SERVERSELECTION,)));
       } else {
         try {
-          resultStep = await _mainController.client
-              .reconnect(_mainController.userPreferences);
+          resultStep = await widget.mainController.client
+              .reconnect(widget.mainController.userPreferences);
           // success -> main interface
           // Failure -> login - step
         } on Exception catch(error) {
           print(error);
-          Navigator.push(context, MaterialPageRoute(builder: (context) => Login(mainController: _mainController,step: AuthenticationStep.SERVERSELECTION,)));
+          Navigator.push(context, MaterialPageRoute(builder: (context) => Login(mainController: widget.mainController,step: AuthenticationStep.SERVERSELECTION,)));
         }
 
         if (resultStep == AuthenticationStep.CONNECTED) {
           Navigator.pushNamed(context, "/applications");
           Navigator.pushNamed(context, "/main");
         } else {
-          await Navigator.push(context, MaterialPageRoute(builder: (context) => Login(mainController: _mainController, step: resultStep)),);
+          await Navigator.push(context, MaterialPageRoute(builder: (context) => Login(mainController: widget.mainController, step: resultStep)),);
         }
       }
     });

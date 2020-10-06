@@ -26,7 +26,7 @@ class MyApp extends StatelessWidget {
         '/applications' : (context) => Applications(mainController: mainController,),
         '/main' : (context) => MainInterface(mainController: mainController,),
         '/recorder' : (context) => RecorderInterface(mainController.audioManager, mainController.audioPlayer),
-        '/dictation' : (context) => DictationInterface(mainController.audioManager),
+        '/dictation' : (context) => DictationInterface(mainController),
       }
     );
   }

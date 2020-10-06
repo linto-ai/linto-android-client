@@ -95,16 +95,16 @@ List<SimpleDialogOption> listRoutes(BuildContext context, List<dynamic> options)
 }
 
 /// Disconnect confirm dialog
-Future<bool> confirmDialog(BuildContext context, String title, {String description : ""}) async {
+Future<bool> confirmDialog(BuildContext context, String title, {String confirmText : "Disconnect", String description : ""}) async {
   return await showDialog<bool>(
     context: context,
     builder: (BuildContext context) {
       return SimpleDialog(
         title: Text(title),
         children: <Widget>[
-          Text(description),
+          Text(description, textAlign: TextAlign.center,),
           SimpleDialogOption(
-            child: Text("Disconnect"),
+            child: Text(confirmText),
             onPressed: () {
               Navigator.pop(context, true);
             }),
@@ -298,7 +298,7 @@ Future<void> aboutDialog(BuildContext context, String clientVersion) async {
   );
 }
 
-Future<void> helpDialog(BuildContext context, MainAxisAlignment position, String text) async {
+Future<void> helpDialog(BuildContext context, MainAxisAlignment position, String text ,{Widget displayWidget}) async {
   const double imageSize = 80.0;
   return await showDialog<void>(
     barrierDismissible: true,
@@ -314,7 +314,7 @@ Future<void> helpDialog(BuildContext context, MainAxisAlignment position, String
                 Padding(
                   padding: EdgeInsets.only(top: imageSize, bottom: 20, left: 20, right: 20),
                   child: Container(
-                    height: 180,
+                    height: 200,
                     width: MediaQuery.of(context).size.width - 20,
                     padding: EdgeInsets.only(top: imageSize / 4 + 10, bottom: 10, left: 10, right: 10),
                     decoration: BoxDecoration(
@@ -325,8 +325,15 @@ Future<void> helpDialog(BuildContext context, MainAxisAlignment position, String
                       ),
                       borderRadius: BorderRadius.circular(8),
                     ),
-                    child: Text(text,
-                      style: TextStyle(color: Colors.black, fontSize: 18, fontWeight: FontWeight.normal, decoration: TextDecoration.none), maxLines: 5,),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Text(text,
+                          style: TextStyle(color: Colors.black, fontSize: 18, fontWeight: FontWeight.normal, decoration: TextDecoration.none), maxLines: 5,),
+                        displayWidget == null ? Container() : displayWidget
+                      ],
+                    )
                   ),
                 ),
                 Positioned(

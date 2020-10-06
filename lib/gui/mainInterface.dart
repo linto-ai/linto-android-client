@@ -38,12 +38,7 @@ class _MainInterface extends State<MainInterface> implements VoiceUIController{
     currentApplication = _mainController.client.currentScope;
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       if(_mainController.userPreferences.getBool("first_login")) {
-        await helpDialog(context, MainAxisAlignment.center, "This is LinTO main interface. You can interact with your assistant by saying \"LinTO !\"");
-        await helpDialog(context, MainAxisAlignment.center, "On the top left corner your can change the current application.");
-        await helpDialog(context, MainAxisAlignment.center, "On the top right corner your can access the application settings.");
-        await helpDialog(context, MainAxisAlignment.center, "You can access the tools on the botton left corner.");
-        await helpDialog(context, MainAxisAlignment.center, "Tap on LinTO to start an vocal interaction.");
-        await helpDialog(context, MainAxisAlignment.center, "Don't want to be listenned ? Toggle the microphone on the bottom right icon.");
+        await displayHelp();
         _mainController.userPreferences.setValue("first_login", false);
       }
     });
@@ -288,6 +283,26 @@ class _MainInterface extends State<MainInterface> implements VoiceUIController{
    );
   }
 
+  void displayHelp() async {
+    await helpDialog(context, MainAxisAlignment.center, "This is LinTO main interface. You can interact with your assistant by saying \"LinTO !\"");
+    await helpDialog(context, MainAxisAlignment.center, "On the top left corner your can change the current application.",
+      displayWidget :  Icon(Icons.storage, color: Colors.lightBlue,));
+    await helpDialog(context, MainAxisAlignment.center, "On the top right corner your can access the application settings.",
+        displayWidget :  Icon(Icons.menu, color: Colors.lightBlue,));
+    await helpDialog(context, MainAxisAlignment.center, "You can access the tools on the botton left corner.",
+        displayWidget :  Icon(Icons.apps, color: Colors.lightBlue,));
+    await helpDialog(context, MainAxisAlignment.center, "Tap on LinTO to start an vocal interaction.");
+    await helpDialog(context, MainAxisAlignment.center, "Don't want to be listenned ? Toggle the microphone on the bottom right icon.",
+        displayWidget :  Row(mainAxisAlignment: MainAxisAlignment.spaceAround, children: [
+          Image.asset('assets/icons/mic_on.png',
+              height: 60,
+              fit: BoxFit.contain),
+          Image.asset('assets/icons/mic_off.png',
+              height: 60,
+              fit: BoxFit.contain),
+        ],));
+  }
+
   void expandPanel(){
   _endDrawerController.open();
   }
@@ -327,7 +342,7 @@ class _MainInterface extends State<MainInterface> implements VoiceUIController{
 
   void displaySettings() async {
     bool disconnected = await Navigator.push(context, MaterialPageRoute(builder: (context) => OptionInterface(mainController: _mainController,)));
-    if (disconnected) {
+    if (disconnected ?? false) {
       _mainController.disconnect();
     } else if (_scaffoldKey.currentState.isEndDrawerOpen) {
       Navigator.pop(context); // Close the drawer when exiting settings.

@@ -185,8 +185,22 @@ class _AuthenticationWidget extends State<AuthenticationWidget> {
                       child: Icon(Icons.help_outline, color: Color.fromARGB(255, 60,187,242), size: 40,)
                   ),
                   onPressed: () async {
-                    await helpDialog(context, MainAxisAlignment.end, "To connect your personnal assistant, please enter the application server address.\nThen press OK");
-                    await helpDialog(context, MainAxisAlignment.start, "If you have been provided with direct connexion informations click on \"More options\"");
+                    await helpDialog(context, MainAxisAlignment.end, "To connect your personnal assistant, please enter the application server address.\nThen press",
+                      displayWidget : Container(
+                        width: 200,
+                        height: 40,
+                        color: Color.fromRGBO(60, 187, 242, 0.9),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                          children: <Widget>[
+                            Icon(Icons.input, color: Colors.white,),
+                            Text("  Connect  ", style: TextStyle(fontSize: 20, color: Colors.white, decoration: TextDecoration.none),),
+                          ],
+                        ),
+                      )
+                    );
+                    await helpDialog(context, MainAxisAlignment.start, "If you have been provided with direct connexion informations click on ",
+                      displayWidget: Text("More Option", style: TextStyle(color: Colors.blue, fontSize: 20, decoration: TextDecoration.underline, decorationColor: Colors.blue),));
                   },
                 )
               ],
@@ -237,7 +251,7 @@ class _AuthenticationWidget extends State<AuthenticationWidget> {
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   children: <Widget>[
                     Icon(Icons.input, color: Colors.white,),
-                    Text("  OK  ", style: TextStyle(fontSize: 20, color: Colors.white),),
+                    Text("  Connect  ", style: TextStyle(fontSize: 20, color: Colors.white),),
                   ],
                 ),
                 onPressed: () {
@@ -288,12 +302,24 @@ class _AuthenticationWidget extends State<AuthenticationWidget> {
                       ),
                       onPressed: () async {
                         await helpDialog(context, MainAxisAlignment.start, "You should have been provided with credential.");
-                        await helpDialog(context, MainAxisAlignment.end, "Enter your credentials and hit \"Login\"");
+                        await helpDialog(context, MainAxisAlignment.end, "Enter your credentials and hit ",
+                          displayWidget: Container(
+                              width: 200,
+                              height: 40,
+                            color: Color.fromRGBO(60, 187, 242, 0.9),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                              children: <Widget>[
+                                Icon(Icons.input, color: Colors.white,),
+                                Text("LOGIN", style: TextStyle(fontSize: 20, color: Colors.white, decoration: TextDecoration.none),),
+                              ],
+                            ),
+                          ));
                       },
                     )
                   ],
                 ),
-                flex: 1,
+                flex: 1
               ),
               Expanded(
                 flex : 10,

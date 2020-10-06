@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'dart:convert';
 import 'dart:typed_data';
@@ -97,6 +98,9 @@ class AudioManager {
   SignalCallback _onUtteranceEnd = (signal) => print('Unset onUtteranceEnd Callback with signal length ${signal.length}');
   VoidCallback _onCanceled = () => print('Unset onCanceled Callback');
 
+  /// External Audio Handler
+  StreamController<List<int>> audioStream = StreamController<List<int>>.broadcast();
+
   AudioManager() : super();
 
   /// Reads audio settings from config file (json)
@@ -135,7 +139,9 @@ class AudioManager {
       Uint8List signalBytes = listIntToUintList(signal);
       _currentFileSink.add(signalBytes);
     }
+    audioStream.add(signal);
   }
+
 
   /// Called on silence frame.
   /// Utterance (silence) -> _onSilenceFrame
@@ -304,5 +310,9 @@ class AudioManager {
   void setVoiceState(VoiceState state) {
     currentState = state;
     print('Changing state to ${state.toString()}');
+  }
+
+  void dispose() {
+    audioStream.close();
   }
 }

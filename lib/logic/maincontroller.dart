@@ -13,6 +13,7 @@ import 'package:linto_flutter_client/logic/uicontroller.dart';
 import 'package:linto_flutter_client/audio/utils/wav.dart';
 import 'package:linto_flutter_client/audio/tts.dart';
 import 'package:linto_flutter_client/logic/transactions.dart';
+import 'package:linto_flutter_client/logic/customtypes.dart' show StreamCallBack;
 
 
 /// MainController is the central controller of the app.
@@ -31,6 +32,10 @@ class MainController {
   UserPreferences userPreferences = UserPreferences();// Persistent user preferences
 
   ClientState state = ClientState.INITIALIZING;       // App State
+
+  bool isStreaming = false;
+  VoidCallback onStreamReady;
+  StreamController msgStream;
 
   Transaction _currentTransaction = Transaction("");  // Current transaction.
   
@@ -109,7 +114,7 @@ class MainController {
   }
 
   void _resolveBehaviors(Map<String, dynamic> behaviors) {
-    if (!{"say", "ask", "display"}.any(behaviors.keys.contains)) {
+    if (!{"say", "ask", "display", "streaming"}.any(behaviors.keys.contains)) {
       currentUI.onError("Failed to interpret server response.");
     }
     if (behaviors.keys.contains("say")) {
@@ -123,6 +128,17 @@ class MainController {
 
     if (behaviors.keys.contains("display")) {
       display(behaviors["display"]["content"], behaviors["display"]["type"] == 'URL');
+    }
+
+    if (behaviors.keys.contains("streaming")) {
+      if ((behaviors["streaming"]["status"] ?? false) == "started") {
+        onStreamReady();
+      }
+      if (behaviors["streaming"].keys.contains("text")) {
+        if(!msgStream.isClosed) {
+          msgStream.add(behaviors["streaming"]["text"]);
+        }
+      }
     }
   }
 
@@ -179,8 +195,28 @@ class MainController {
     }
   }
 
-  void displayWebview(String toDisplay, bool isURL) {
+  ///
+  void initStream(VoidCallback onReady) {
+    onStreamReady = onReady;
+    client.initStreaming();
+  }
 
+  /// Start remote speech stream
+   StreamController<String> startStream() {
+    client.startStreaming(audioManager.audioStream);
+    msgStream = StreamController<String>.broadcast();
+    return msgStream;
+  }
+
+  /// Stop remote speech stream
+  void stopStream() {
+    client.stopStreaming();
+    msgStream?.close();
+  }
+
+  /// Display webview on current interface
+  void displayWebview(String toDisplay, bool isURL) {
+    //TODO
   }
 
   /// Bind audio input callbacks

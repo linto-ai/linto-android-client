@@ -1,7 +1,9 @@
 import 'dart:convert';
+import 'dart:typed_data';
 import 'package:linto_flutter_client/logic/customtypes.dart';
 import 'package:mqtt_client/mqtt_client.dart';
 import 'package:mqtt_client/mqtt_server_client.dart';
+import 'package:typed_data/typed_buffers.dart' show Uint8Buffer;
 
 enum MQTTCurrentConnectionState {
   IDLE,
@@ -96,7 +98,7 @@ class MQTTClientWrapper {
       }
   }
 
-  void _subscribeToTopic(String topicName) {
+  void subscribeToTopic(String topicName) {
     print('MQTTClientWrapper::Subscribing to the $topicName topic');
     client.subscribe(topicName, MqttQos.atMostOnce);
     client.updates.listen((List<MqttReceivedMessage<MqttMessage>> c) {
@@ -122,7 +124,7 @@ class MQTTClientWrapper {
     connectionState = MQTTCurrentConnectionState.CONNECTED;
     print('MQTTClientWrapper::OnConnected client callback - Client connection was sucessful');
     publish("$_pubTopic$STATUS_TOPIC", {"connexion": "online", ...deviceInfo}, retain: _retainStatus);
-    _subscribeToTopic("$_subTopic/#");
+    subscribeToTopic("$_subTopic/#");
   }
 
   void _onSubscribe(String topic) {
@@ -140,6 +142,12 @@ class MQTTClientWrapper {
     builder.addString(payload_formated);
     client.publishMessage(topic, MqttQos.atMostOnce, builder.payload, retain: retain);
     print("Published on $topic.");
+  }
+
+  void publishRaw(String topic, Uint8List payload) {
+    Uint8Buffer dataBuffer = Uint8Buffer();
+    dataBuffer.addAll(payload);
+    client.publishMessage(topic, MqttQos.atMostOnce, dataBuffer);
   }
 
   void disconnect() {

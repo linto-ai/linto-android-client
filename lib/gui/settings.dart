@@ -56,7 +56,7 @@ class _OptionInterface extends State<OptionInterface> {
                           ),
                         ),
                         Container(
-                          padding: EdgeInsets.only(top: 50),
+                          padding: EdgeInsets.only(top: 10),
                             child: Column (
                               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                               children: [
@@ -103,6 +103,19 @@ class _OptionInterface extends State<OptionInterface> {
                           ),
                         ),
                         Spacer(),
+                        Container(
+                          width: 200,
+                          child: RaisedButton(
+                            child: Text("Reset Application"),
+                            onPressed: () async {
+                              bool res = await confirmDialog(context, "Reset your application ?",confirmText: "Reset Application");
+                              if (res ?? false) {
+                                _mainController.userPreferences.resetValue();
+                                Navigator.pop(context, true);
+                              }
+                            },
+                          ),
+                        ),
                         sysInfo(_mainController),
                       ],
                       mainAxisAlignment: MainAxisAlignment.spaceAround,

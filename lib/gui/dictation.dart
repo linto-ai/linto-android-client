@@ -1,13 +1,14 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:linto_flutter_client/audio/audiomanager.dart';
+import 'package:linto_flutter_client/logic/maincontroller.dart';
 
 
 
 class DictationInterface extends StatefulWidget {
-  final AudioManager audioManager;
+  final MainController mainController;
 
-  DictationInterface(this.audioManager, {Key key}) : super(key: key);
+  DictationInterface(this.mainController, {Key key}) : super(key: key);
 
   @override
   _DictationInterface createState() => new _DictationInterface();
@@ -16,8 +17,16 @@ class DictationInterface extends StatefulWidget {
 class _DictationInterface extends State<DictationInterface> {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
+  TextEditingController textController = TextEditingController();
+
+  bool isStreaming = false;
+  bool isReady = false;
+
+  StreamSubscription streamSub;
+
   @override
   void initState() {
+    widget.mainController.audioManager.stopDetecting();
     super.initState();
   }
 
@@ -28,6 +37,8 @@ class _DictationInterface extends State<DictationInterface> {
         .orientation;
     return WillPopScope(
         onWillPop: () async {
+          streamSub?.cancel();
+          if (isStreaming) widget.mainController.stopStream();
           return true;
         },
         child: Scaffold(
@@ -48,18 +59,20 @@ class _DictationInterface extends State<DictationInterface> {
                                 fit: BoxFit.fill,
                                 child: Icon(Icons.record_voice_over,
                                   color: Color.fromARGB(255, 60, 187, 242),
-                                  size: 80,)
+                                  size: 60,)
                             ),
+                            flex: 2,
                           ),
 
                           Expanded(
                             child: Column(
                               children: [
                                 Container(
-                                  child: TextField(maxLines: orientation == Orientation.portrait ? 8 : 7,),
+                                  child: TextField(maxLines: orientation == Orientation.portrait ? 8 : 7,
+                                  controller: textController,),
                                   decoration: BoxDecoration(
                                       border: Border.all(),
-                                      borderRadius: BorderRadius.circular(12)
+                                      borderRadius: BorderRadius.circular(12),
                                   ),
                                 ),
                                 ButtonBar(
@@ -67,20 +80,25 @@ class _DictationInterface extends State<DictationInterface> {
                                   children: [
                                     IconButton(
                                         icon: Icon(Icons.fiber_manual_record),
-                                        onPressed: null
+                                        onPressed: !(!isStreaming && !isReady) ? null : () {startDictation();}
                                     ),
                                     IconButton(
                                         icon: Icon(Icons.stop),
-                                        onPressed: null
+                                        onPressed: !(isStreaming && isReady) ? null : () {stopDictation();}
                                     ),
                                     IconButton(
                                         icon: Icon(Icons.content_copy),
-                                        onPressed: null
+                                        onPressed: () =>  textController.text += "test"
+                                    ),
+                                    IconButton(
+                                        icon: Icon(Icons.delete),
+                                        onPressed: () =>  textController.clear()
                                     ),
                                   ],
                                 )
                               ],
                             ),
+                            flex: 3,
                           )
                         ],
                       ),
@@ -88,5 +106,33 @@ class _DictationInterface extends State<DictationInterface> {
             )
         )
     );
+  }
+
+  void startDictation() {
+    setState(() {
+      isReady = false;
+      isStreaming = true;
+    });
+    widget.mainController.initStream(onStreamingReady);
+  }
+
+  void stopDictation() {
+    setState(() {
+      isReady = false;
+      isStreaming = false;
+    });
+    streamSub?.cancel();
+    widget.mainController.stopStream();
+  }
+
+  void onStreamingReady() {
+    setState(() {
+      isReady = true;
+    });
+    StreamController<String> controller = widget.mainController.startStream();
+    streamSub = controller.stream.listen((event) {
+      textController.text += event;
+      textController.text += "\n";
+    });
   }
 }

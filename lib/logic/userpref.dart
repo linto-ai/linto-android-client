@@ -37,7 +37,6 @@ class UserPreferences {
 
   Future<void> init() async {
     _preferences = await SharedPreferences.getInstance();
-    setValue("first_login", true);
     if(!_preferences.containsKey("first_login")) {
       setValues(INITIAL_PREF);
     }
@@ -70,6 +69,10 @@ class UserPreferences {
       }
     }
     return;
+  }
+
+  void resetValue() {
+    setValues(INITIAL_PREF);
   }
 
   String getString (String key) {

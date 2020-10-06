@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 import 'package:http/http.dart' as http;
 import 'package:linto_flutter_client/client/mqttClientWrapper.dart';
 import 'package:linto_flutter_client/logic/customtypes.dart';
@@ -17,7 +18,7 @@ enum AuthenticationStep{
 }
 
 class LinTOClient {
-  static const String CLIENT_VERSION = "0.2.3";
+  static const String CLIENT_VERSION = "0.2.4";
 
   static const String APIROUTES = "/auths";
   static const String APIAUTHSUFFIX = "/android/login";
@@ -52,6 +53,11 @@ class LinTOClient {
   bool _authenticated = false;
 
   MQTTClientWrapper mqttClient;
+
+  // Stream
+  StreamController<String> msgStream = StreamController<String>.broadcast();
+  StreamSubscription audioStreamSub;
+  String streamingEgressTopic;
 
   String get login {
     return _login;
@@ -254,6 +260,12 @@ class LinTOClient {
     }
   }
 
+  // #################
+  // APPLICATION SCOPE
+  // #################
+
+  /// Sets current application
+  /// Connects to the broker and subscribe accordingly.
   Future<bool> setScope(ApplicationScope scope) async {
     _selectedScope = scope;
     _publishingTopic = "${scope.topic}$MQTTEGRESS/$_sessionID";
@@ -264,9 +276,45 @@ class LinTOClient {
     return _authenticated;
   }
 
+  /// Disconnects the current application and calls setScope to the new application
   Future<void> changeScope(ApplicationScope scope) async {
     mqttClient.disconnect();
     await setScope(scope);
+  }
+
+  /// Retrieves an application by its topic
+  /// If the application is unavailable returns null
+  ApplicationScope getScopeByTopic(String topic) {
+    for (ApplicationScope scope in scopes) {
+      if (scope.topic == topic) {
+        return scope;
+      }
+    }
+    return null;
+  }
+
+  // #################
+  // STREAMING
+  // #################
+
+   void initStreaming() {
+    streamingEgressTopic = "${currentScope.topic}$MQTTEGRESS/$deviceID/streaming/chunk";
+    sendMessage({"config" : {"sample_rate": 16000, "metadata": 1}}, subTopic: "/streaming/start");
+  }
+
+  StreamController<String> startStreaming(StreamController<List<int>> audioStream) {
+    audioStreamSub = audioStream.stream.listen((event) {sendAudioChunk(event);});
+    return msgStream;
+  }
+
+  void sendAudioChunk(List<int> chunk) {
+    Uint8List chunkBytes = Uint16List.fromList(chunk).buffer.asUint8List();
+    mqttClient.publishRaw(streamingEgressTopic, chunkBytes);
+  }
+
+  void stopStreaming() {
+    sendMessage({}, subTopic: "/streaming/stop");
+    audioStreamSub?.cancel();
   }
 
   Future<AuthenticationStep> reconnect(UserPreferences userPrefs) async {
@@ -400,14 +448,7 @@ class LinTOClient {
       mqttClient.disconnect();
     }
   }
-  ApplicationScope getScopeByTopic(String topic) {
-    for (ApplicationScope scope in scopes) {
-      if (scope.topic == topic) {
-        return scope;
-      }
-    }
-    return null;
-  }
+
 
   void pong() {
     sendMessage(Map<String, dynamic>(), subTopic: "/pong");
@@ -435,13 +476,20 @@ class LinTOClient {
     ret["config"]["network"].add(network);
     return ret;
   }
+
+
+
+  void dispose() {
+    msgStream.close();
+  }
 }
 
 class ApplicationScope {
   final String topic;
   final String name;
   final String description;
-  ApplicationScope(this.topic, this.name, this.description);
+  bool streaming;
+  ApplicationScope(this.topic, this.name, this.description, {bool acceptStreaming : false});
   Map<String, String> toMap() {
     return {"topic" : topic, "name" : name, "description" : description};
   }
