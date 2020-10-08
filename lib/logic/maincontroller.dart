@@ -13,7 +13,6 @@ import 'package:linto_flutter_client/logic/uicontroller.dart';
 import 'package:linto_flutter_client/audio/utils/wav.dart';
 import 'package:linto_flutter_client/audio/tts.dart';
 import 'package:linto_flutter_client/logic/transactions.dart';
-import 'package:linto_flutter_client/logic/customtypes.dart' show StreamCallBack;
 
 
 /// MainController is the central controller of the app.
@@ -26,7 +25,7 @@ class MainController {
 
   final LinTOClient client = LinTOClient();           // Network connectivity
   final AudioManager audioManager = AudioManager();   // Audio input
-  final Audio audioPlayer = Audio();                 // Audio output
+  final Audio audioPlayer = Audio();                  // Audio output
   final TTS _tts = TTS();                             // Text to speech
   VoiceUIController currentUI;                        // UI interface
   UserPreferences userPreferences = UserPreferences();// Persistent user preferences
@@ -35,7 +34,7 @@ class MainController {
 
   bool isStreaming = false;
   VoidCallback onStreamReady;
-  StreamController msgStream;
+  StreamController<Map<String, dynamic>> msgStream;
 
   Transaction _currentTransaction = Transaction("");  // Current transaction.
   
@@ -109,17 +108,17 @@ class MainController {
       _resolveErrors(decodedMsg['error']);
       return;
     } else if(decodedMsg.keys.contains("behavior")) {
-      _resolveBehaviors(decodedMsg['behavior']);
+      _resolveBehaviors(decodedMsg['behavior'], transcript : decodedMsg['transcript']);
     }
   }
 
-  void _resolveBehaviors(Map<String, dynamic> behaviors) {
+  void _resolveBehaviors(Map<String, dynamic> behaviors, {String transcript}) {
     if (!{"say", "ask", "display", "streaming"}.any(behaviors.keys.contains)) {
       currentUI.onError("Failed to interpret server response.");
     }
     if (behaviors.keys.contains("say")) {
       say(behaviors["say"]["text"], currentUI.onLintoSpeakingStop);
-      currentUI.onMessage(behaviors["say"]["text"]);
+      currentUI.onMessage(behaviors["say"]["text"], topMsg: transcript);
     } else if (behaviors.keys.contains("ask")) {
       _currentTransaction.conversationData = behaviors["conversationData"];
       _currentTransaction.transactionState = TransactionState.WFORCLIENT;
@@ -134,9 +133,9 @@ class MainController {
       if ((behaviors["streaming"]["status"] ?? false) == "started") {
         onStreamReady();
       }
-      if (behaviors["streaming"].keys.contains("text")) {
+      if (behaviors["streaming"].keys.contains("text") || behaviors["streaming"].keys.contains("partial")) {
         if(!msgStream.isClosed) {
-          msgStream.add(behaviors["streaming"]["text"]);
+          msgStream.add(behaviors["streaming"]);
         }
       }
     }
@@ -202,9 +201,9 @@ class MainController {
   }
 
   /// Start remote speech stream
-   StreamController<String> startStream() {
+   StreamController<Map<String, dynamic>> startStream() {
     client.startStreaming(audioManager.audioStream);
-    msgStream = StreamController<String>.broadcast();
+    msgStream = StreamController<Map<String, dynamic>>.broadcast();
     return msgStream;
   }
 

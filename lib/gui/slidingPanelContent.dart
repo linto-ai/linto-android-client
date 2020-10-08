@@ -11,8 +11,8 @@ class SlidingPanel extends StatefulWidget {
     return state;
   }
 
-  void displayMsg(String msg) {
-    state.displayText(msg);
+  void displayMsg(String msg, {String topMsg}) {
+    state.displayText(msg, topMsg : topMsg);
   }
 
   void displayLoading() {
@@ -35,6 +35,7 @@ class SlidingPanel extends StatefulWidget {
 class _SlidingPanel extends State<SlidingPanel> {
   bool _loadingDisplay = true;
   String _displayedText = "";
+  String _topMsg = "";
 
   @override
   void initState() {
@@ -49,8 +50,9 @@ class _SlidingPanel extends State<SlidingPanel> {
 
   }
 
-  void displayText(String text) {
+  void displayText(String text, {String topMsg}) {
     setState(() {
+      _topMsg = topMsg == null ? "LinTO says:" : "«$topMsg»";
       _displayedText = text;
       _loadingDisplay = false;
     });
@@ -60,6 +62,7 @@ class _SlidingPanel extends State<SlidingPanel> {
   Widget build(BuildContext context) {
     double windowWidth = MediaQuery.of(context).size.width;
     return Container(
+      padding: EdgeInsets.only(top: 10, bottom: 10),
       child: Row(
         children: <Widget>[
           Expanded(
@@ -71,12 +74,25 @@ class _SlidingPanel extends State<SlidingPanel> {
           ),
           Expanded(
             flex: 2,
-            child: _loadingDisplay ? FlareDisplay(assetpath: 'assets/icons/Loading.flr',
-                animationName: 'Alarm',
-                width: windowWidth * 0.25,
-                height: windowWidth * 0.25) :
-                  AutoSizeText(_displayedText,
-                    style: TextStyle(fontSize: 40), maxLines: 4,),
+            child: Container(
+              child: _loadingDisplay ? FlareDisplay(assetpath: 'assets/icons/Loading.flr',
+                  animationName: 'Alarm',
+                  width: windowWidth * 0.25,
+                  height: windowWidth * 0.25) : Column(
+                children: [
+                  Expanded(
+                    flex: 1,
+                    child: AutoSizeText(_topMsg, style: TextStyle(fontSize: 30, fontWeight: FontWeight.bold, fontStyle: FontStyle.italic), maxLines: 2, textAlign: TextAlign.left,),
+                  ),
+                  Spacer(),
+                  Expanded(
+                    flex: 5,
+                    child: AutoSizeText(_displayedText,
+                      style: TextStyle(fontSize: 50), maxLines: 4, textAlign: TextAlign.center,),
+                  )
+                ],
+              ),
+            ),
           )
         ],
       ),

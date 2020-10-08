@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'package:mic_stream/mic_stream.dart';
 
-//TODO: Check Permissions
 
 class MicrophoneInput {
   int _sampleRate;
@@ -13,35 +12,31 @@ class MicrophoneInput {
 
   Stream<List<int>> _micStream;
   StreamSubscription<List<int>> _listener;
+  StreamController<List<int>> audioInputStream;
 
   Function(List<num>) _frameSink;
 
-  set frameSink(Function(List<num>) sink) {
-    _frameSink = sink;
-  }
-
-  bool get isListening{
+    bool get isListening{
     return _isListening;
   }
 
   MicrophoneInput(int sampleRate, int encoding, int channels) {
     _sampleRate = sampleRate;
     _channels = channels;
+    audioInputStream = StreamController<List<int>>();
   }
 
   void startListening() {
     if (!_isListening) {
       _micStream = microphone(sampleRate: _sampleRate, audioFormat: AudioFormat.ENCODING_PCM_16BIT, audioSource: AudioSource.MIC);
-      _listener = _micStream.listen((samples) => _frameSink(samples));
+      _listener = _micStream.listen((samples) => audioInputStream.add(samples));
       _isListening = true;
-      print("start");
     }
   }
   void stopListening() {
     if (_isListening) {
       _listener.cancel();
       _isListening = false;
-      print("stop");
     }
   }
 }

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:typed_data';
 import 'package:flutter/services.dart';
 import 'package:linto_flutter_client/logic/customtypes.dart';
@@ -11,6 +12,12 @@ class KWS {
   Uint8List _featureBuffer = Uint8List(1560);
   double _threshold = 0.3;
   Function(double) _callback = (v) => print('Detected at ' + v.toString());
+
+  StreamSubscription<List<double>> featureSub;
+
+  KWS(Stream featureStream) {
+    featureSub = featureStream.listen((features) => pushFeatures(features));
+  }
 
   set onDetection(Function(double) cb) {
     _callback = cb;

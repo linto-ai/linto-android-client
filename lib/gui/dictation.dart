@@ -1,6 +1,7 @@
 import 'dart:async';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:linto_flutter_client/audio/audiomanager.dart';
+import 'package:flutter/services.dart';
 import 'package:linto_flutter_client/logic/maincontroller.dart';
 
 
@@ -17,12 +18,14 @@ class DictationInterface extends StatefulWidget {
 class _DictationInterface extends State<DictationInterface> {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
-  TextEditingController textController = TextEditingController();
-
+  int cursorPos = 0;
   bool isStreaming = false;
   bool isReady = false;
 
   StreamSubscription streamSub;
+  String currentText = " ";
+
+  Timer timeout;
 
   @override
   void initState() {
@@ -38,6 +41,7 @@ class _DictationInterface extends State<DictationInterface> {
     return WillPopScope(
         onWillPop: () async {
           streamSub?.cancel();
+          timeout?.cancel();
           if (isStreaming) widget.mainController.stopStream();
           return true;
         },
@@ -61,44 +65,46 @@ class _DictationInterface extends State<DictationInterface> {
                                   color: Color.fromARGB(255, 60, 187, 242),
                                   size: 60,)
                             ),
-                            flex: 2,
+                            flex: 4,
                           ),
-
                           Expanded(
-                            child: Column(
-                              children: [
-                                Container(
-                                  child: TextField(maxLines: orientation == Orientation.portrait ? 8 : 7,
-                                  controller: textController,),
-                                  decoration: BoxDecoration(
-                                      border: Border.all(),
-                                      borderRadius: BorderRadius.circular(12),
-                                  ),
-                                ),
-                                ButtonBar(
-                                  alignment: MainAxisAlignment.spaceEvenly,
-                                  children: [
-                                    IconButton(
-                                        icon: Icon(Icons.fiber_manual_record),
-                                        onPressed: !(!isStreaming && !isReady) ? null : () {startDictation();}
-                                    ),
-                                    IconButton(
-                                        icon: Icon(Icons.stop),
-                                        onPressed: !(isStreaming && isReady) ? null : () {stopDictation();}
-                                    ),
-                                    IconButton(
-                                        icon: Icon(Icons.content_copy),
-                                        onPressed: () =>  textController.text += "test"
-                                    ),
-                                    IconButton(
-                                        icon: Icon(Icons.delete),
-                                        onPressed: () =>  textController.clear()
-                                    ),
-                                  ],
-                                )
-                              ],
+                            child: Container(
+                              padding: EdgeInsets.all(10),
+                              child: SingleChildScrollView(
+                                scrollDirection: Axis.vertical,
+                                child: Text(currentText),
+                              ),
                             ),
-                            flex: 3,
+                            flex: 6,
+                          ),
+                          Expanded(
+                            flex: 1,
+                            child: ButtonBar(
+                              alignment: MainAxisAlignment.spaceEvenly,
+                              children: [
+                                IconButton(
+                                    icon: Icon(Icons.fiber_manual_record),
+                                    onPressed: !(!isStreaming && !isReady) ? null : () {startDictation();}
+                                ),
+                                IconButton(
+                                    icon: Icon(Icons.stop),
+                                    onPressed: !(isStreaming && isReady) ? null : () {stopDictation();}
+                                ),
+                                IconButton(
+                                    icon: Icon(Icons.content_copy),
+                                    onPressed: () =>  copyToClipboard()
+                                ),
+                                IconButton(
+                                    icon: Icon(Icons.delete),
+                                    onPressed: () {
+                                      setState(() {
+                                        currentText = "";
+                                      });
+                                      cursorPos = 0;
+                                    }
+                                ),
+                              ],
+                            )
                           )
                         ],
                       ),
@@ -114,6 +120,7 @@ class _DictationInterface extends State<DictationInterface> {
       isStreaming = true;
     });
     widget.mainController.initStream(onStreamingReady);
+    timeout = Timer(Duration(seconds: 5) ,onTimeout);
   }
 
   void stopDictation() {
@@ -126,13 +133,46 @@ class _DictationInterface extends State<DictationInterface> {
   }
 
   void onStreamingReady() {
+    timeout.cancel();
     setState(() {
       isReady = true;
     });
-    StreamController<String> controller = widget.mainController.startStream();
+    StreamController<Map<String, dynamic>> controller = widget.mainController.startStream();
     streamSub = controller.stream.listen((event) {
-      textController.text += event;
-      textController.text += "\n";
+      onText(event);
     });
+  }
+  void onText(Map<String, dynamic> input) {
+    if (input.keys.contains("partial")) {
+      currentText = currentText.substring(0, cursorPos);
+      currentText += "${input["partial"]}";
+    } else {
+      currentText = currentText.substring(0, cursorPos);
+      currentText += "${input["text"]}.\n";
+      cursorPos += input["text"].length + 1;
+    }
+    setState(() {
+      currentText = currentText;
+    });
+  }
+
+  void onTimeout() {
+    setState(() {
+      isStreaming = false;
+    });
+    final snackBarError = SnackBar(
+      content: Text("Failed to init streaming service."),
+      backgroundColor: Colors.red,
+    );
+    _scaffoldKey.currentState.showSnackBar(snackBarError);
+  }
+
+  void copyToClipboard() {
+    Clipboard.setData(ClipboardData(text: currentText));
+    final snackBarError = SnackBar(
+      content: Text("Text copied to clipboard"),
+      backgroundColor: Color(0x3db5e4),
+    );
+    _scaffoldKey.currentState.showSnackBar(snackBarError);
   }
 }

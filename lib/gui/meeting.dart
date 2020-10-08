@@ -191,7 +191,7 @@ class _MeetingInterface extends State<MeetingInterface> implements VoiceUIContro
   }
 
   @override
-  void onMessage(String msg) {
+  void onMessage(String msg, {String topMsg}) {
 
   }
 

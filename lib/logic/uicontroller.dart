@@ -40,7 +40,7 @@ class VoiceUIController{
     print('Linto stop speaking');
   }
 
-  void onMessage(String msg) {
+  void onMessage(String msg, {String topMsg}) {
     print('Received message : $msg');
   }
 

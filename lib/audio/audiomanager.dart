@@ -74,6 +74,11 @@ class AudioManager {
 
   /// Audio input
   MicrophoneInput _microphone;
+  StreamSubscription<List<int>> micStreamSub;
+
+  /// Audio output
+  StreamController<List<int>> audioStream = StreamController<List<int>>.broadcast();
+  StreamController<List<double>> featureStream = StreamController<List<double>>();
 
   /// Keyword spotting
   KWS _kws;
@@ -98,9 +103,6 @@ class AudioManager {
   SignalCallback _onUtteranceEnd = (signal) => print('Unset onUtteranceEnd Callback with signal length ${signal.length}');
   VoidCallback _onCanceled = () => print('Unset onCanceled Callback');
 
-  /// External Audio Handler
-  StreamController<List<int>> audioStream = StreamController<List<int>>.broadcast();
-
   AudioManager() : super();
 
   /// Reads audio settings from config file (json)
@@ -112,7 +114,7 @@ class AudioManager {
     _settings = await _loadSettings();
     print('config loaded');
     _microphone = MicrophoneInput(_settings['audio']['samplingRate'], _settings['audio']['encoding'], _settings['audio']['channels']);
-    _microphone.frameSink = _onAudioFrames;
+    micStreamSub = _microphone.audioInputStream.stream.listen((frame) => _onAudioFrames(frame));
     _mfcc = MFCC(_settings['audio']['samplingRate'],
                  _settings['audio']['features']['nFFT'],
                  _settings['audio']['features']['numFilters'],
@@ -120,12 +122,11 @@ class AudioManager {
                  energy: _settings['audio']['features']['energy'],
                  preEmphasis: _settings['audio']['features']['preEmp']);
     print('initialized');
-    _kws = KWS();
+    _kws = KWS(featureStream.stream);
     await _kws.loadModel('linto_tflite.tflite');
     _kws.onDetection = _onKWSpotted;
-    _utterance = Utterance();
-    _utterance.speechCallback =_onSpeechFrame;
-    _utterance.silenceCallback = _onSilenceFrame;
+    _utterance = Utterance(audioStream.stream);
+    _utterance.speechStream.stream.listen((frame) => _onSpeechFrame(frame));
     _audio = Audio();
     setVoiceState(VoiceState.IDLE);
     _microphone.startListening();
@@ -133,19 +134,12 @@ class AudioManager {
   }
 
   /// Called on microphone audio frame
-  void _onAudioFrames(List<num> signal) {
-    _utterance.onFrame(signal);
+  void _onAudioFrames(List<num> frame) {
+    audioStream.add(frame);
     if (_inputRecorded) {
-      Uint8List signalBytes = listIntToUintList(signal);
+      Uint8List signalBytes = listIntToUintList(frame);
       _currentFileSink.add(signalBytes);
     }
-    audioStream.add(signal);
-  }
-
-
-  /// Called on silence frame.
-  /// Utterance (silence) -> _onSilenceFrame
-  void _onSilenceFrame(List<int> frame) {
   }
 
   /// Called on speech frame
@@ -157,8 +151,7 @@ class AudioManager {
       while (signalBuffer.length >= _settings['audio']['features']['windowLength']) {
         List<double> frame = signalBuffer.sublist(0,1024).toList();
         signalBuffer = signalBuffer.sublist(512).toList();
-        var features = _mfcc.process_frame(frame);
-        _kws.pushFeatures(features);
+        featureStream.add(_mfcc.process_frame(frame));
       }
     }
   }
@@ -203,7 +196,7 @@ class AudioManager {
     _isDetectingUtterance = false;
   }
 
-  /// Starts keyword spottting
+  /// Starts keyword spotting
   void startDetecting() {
     if (!_isDetecting) {
       _isDetecting = true;

@@ -18,7 +18,7 @@ enum AuthenticationStep{
 }
 
 class LinTOClient {
-  static const String CLIENT_VERSION = "0.2.4";
+  static const String CLIENT_VERSION = "0.2.5";
 
   static const String APIROUTES = "/auths";
   static const String APIAUTHSUFFIX = "/android/login";
@@ -55,7 +55,7 @@ class LinTOClient {
   MQTTClientWrapper mqttClient;
 
   // Stream
-  StreamController<String> msgStream = StreamController<String>.broadcast();
+  StreamController<Map<String, String>> msgStream = StreamController<Map<String, String>>.broadcast();
   StreamSubscription audioStreamSub;
   String streamingEgressTopic;
 
@@ -302,7 +302,7 @@ class LinTOClient {
     sendMessage({"config" : {"sample_rate": 16000, "metadata": 1}}, subTopic: "/streaming/start");
   }
 
-  StreamController<String> startStreaming(StreamController<List<int>> audioStream) {
+  StreamController<Map<String, String>> startStreaming(StreamController<List<int>> audioStream) {
     audioStreamSub = audioStream.stream.listen((event) {sendAudioChunk(event);});
     return msgStream;
   }

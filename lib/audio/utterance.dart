@@ -1,5 +1,6 @@
 import 'dart:typed_data';
 import 'dart:io';
+import 'dart:async';
 import 'dart:collection';
 import 'package:flutter/services.dart';
 import 'package:path_provider/path_provider.dart';
@@ -19,6 +20,9 @@ class Utterance {
 
   static const int _N_PREV_FRAME = 15;
   static const int _N_FOLLOW_FRAME = 15;
+
+  StreamSubscription<List<int>> audioSub;
+  StreamController<List<int>> speechStream = StreamController<List<int>>();
 
   /// Frame size (sample), must be compatible with the vad engine.
   static const int _VAD_FRAME_LENGTH = 480;
@@ -57,16 +61,8 @@ class Utterance {
     _streamable = v;
   }
 
-  Function(List<int>) _speechCallback = (l) => print("Frame of length ${l.length} contains speech");
-  /// Set the callback function called for voiced audio frames.
-  set speechCallback(Function(List<int>) cbFun) {
-    _speechCallback = cbFun;
-  }
-
-  Function(List<int>) _silenceCallback = (l) => print("Frame of length ${l.length} contains silence");
-  /// Set the callback function called for voiced audio frames.
-  set silenceCallback(Function(List<int>) cbFun) {
-    _silenceCallback = cbFun;
+  Utterance(Stream audioStream) {
+    audioSub = audioStream.listen((frame) => onFrame(frame));
   }
 
   Function(List<int>, UtteranceStatus) _utteranceCallback;
@@ -82,7 +78,6 @@ class Utterance {
   /// If _uttDetection is true, detects utterance and calls [utteranceCallback] at the end of utterance.
   ///
   void onFrame(List<int> frame) async {
-    // Get [_VAD_FRAME_LENGTH] while
     _signalBuffer.addAll(frame);
     List<int> currentFrame;
     while(_signalBuffer.length >= _VAD_FRAME_LENGTH) {
@@ -124,7 +119,7 @@ class Utterance {
         }
       }
       speechFrame += frame;
-      _speechCallback(speechFrame);
+      speechStream.add(frame);
     }
     _speechC += 1;
     _silenceC = 0;
@@ -141,9 +136,8 @@ class Utterance {
     if (_streamable) {
       if (_followToken < _N_FOLLOW_FRAME) {
         _followToken += 1;
-        _speechCallback(frame);
+        speechStream.add(frame);
       } else {
-        _silenceCallback(frame);
         _addToFrameBuffer(frame);
       }
     }

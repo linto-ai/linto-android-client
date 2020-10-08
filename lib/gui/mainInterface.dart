@@ -101,7 +101,9 @@ class _MainInterface extends State<MainInterface> implements VoiceUIController{
                          fit: BoxFit.fill,
                          child: Icon(Icons.mic_none, color: Color.fromARGB(255, 60,187,242), size: 80,)
                      ),
-                     onPressed: ()  => displayRecorder(),
+                     onPressed: ()  async {
+                       displayRecorder();
+                     },
                    ),
                  ],
                ),
@@ -113,7 +115,11 @@ class _MainInterface extends State<MainInterface> implements VoiceUIController{
                          fit: BoxFit.fill,
                          child: Icon(Icons.record_voice_over, color: Color.fromARGB(255, 60,187,242), size: 80,)
                      ),
-                     onPressed: () => Navigator.popAndPushNamed(context, '/dictation'),
+                     onPressed: () async {
+                       _mainController.audioManager.stopDetecting();
+                       await Navigator.popAndPushNamed(context, '/dictation');
+                       if (isListening) _mainController.audioManager.startDetecting();
+                     }
                    ),
                  ],
                ),
@@ -425,9 +431,9 @@ class _MainInterface extends State<MainInterface> implements VoiceUIController{
   }
 
   @override
-  void onMessage(String msg) {
+  void onMessage(String msg, {String topMsg}) {
     expandPanel();
-    panel.displayMsg(msg);
+    panel.displayMsg(msg, topMsg: topMsg); // Temporary, ponctuation and capitalisation are meant to be set server-side.
   }
 
   @override

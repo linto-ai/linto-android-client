@@ -2,7 +2,7 @@
 
 Android flutter client for LinTO.
 
-Latest Build : [LinTO Android Client (alpha 0.2.2)](https://dl.linto.ai/downloads/android/linto_apk_latest.apk)
+Latest Build : [LinTO Android Client (alpha 0.2.5)](https://dl.linto.ai/downloads/android/linto_apk_latest.apk)
 
 ## Getting Started
 
