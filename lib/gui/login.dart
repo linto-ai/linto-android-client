@@ -721,7 +721,7 @@ class _AuthenticationWidget extends State<AuthenticationWidget> {
         _brokerC.text = preferences.getString("direct_ip");
         _portC.text = preferences.getString("direct_port");
         _mqttLoginC.text = preferences.getString("direct_id");
-        _mqttPassC.text = _mainController.userPreferences.passwordM;
+        _mqttPassC.text = preferences.passwordM;
         _scopeC.text = preferences.getString("direct_app");
       });
     }

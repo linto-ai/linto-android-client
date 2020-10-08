@@ -27,8 +27,8 @@ class UserPreferences {
     "speech_volume" : 1.0
   };
 
-  String passwordC;
-  String passwordM;
+  String _passwordC;
+  String _passwordM;
   SharedPreferences _preferences;
 
   File prefFile;
@@ -40,8 +40,8 @@ class UserPreferences {
     if(!_preferences.containsKey("first_login")) {
       setValues(INITIAL_PREF);
     }
-    passwordC = await storage.read(key: KEYSTOREPASSKEYC);
-    passwordM = await storage.read(key: KEYSTOREPASSKEYM);
+    _passwordC = await storage.read(key: KEYSTOREPASSKEYC);
+    _passwordM = await storage.read(key: KEYSTOREPASSKEYM);
   }
 
   void setValues(Map<String, dynamic> values) {
@@ -110,14 +110,22 @@ class UserPreferences {
     }
   }
 
-  set passWordC(String password) {
-    this.passwordC = password;
+  set passwordC(String password) {
+    this._passwordC = password;
     storage.write(key: KEYSTOREPASSKEYC, value: password);
   }
 
-  set passWordM(String password) {
-    this.passwordM = password;
+  String get passwordC {
+    return _passwordC;
+  }
+
+  set passwordM(String password) {
+    this._passwordM = password;
     storage.write(key: KEYSTOREPASSKEYM, value: password);
+  }
+
+  String get passwordM {
+    return _passwordM;
   }
 
   Map<String, dynamic> toMap() {

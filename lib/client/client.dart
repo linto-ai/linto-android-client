@@ -354,7 +354,7 @@ class LinTOClient {
 
     step = AuthenticationStep.AUTHENTICATED;
 
-    if ( ! scopes.map((e) => e.topic).contains(userPrefs.getString("cred_app"))){
+    if ( !scopes.map((e) => e.topic).contains(userPrefs.getString("cred_app"))){
       return step;
     }
 

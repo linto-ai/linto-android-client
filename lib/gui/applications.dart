@@ -111,6 +111,7 @@ class _Applications extends State<Applications> {
     bool res = await showScopeDialog(context, app);
     if(res ?? false){
       _mainController.client.setScope(app);
+      _mainController.userPreferences.setValue("cred_app", app.topic);
      await  Navigator.pushNamed(context, '/main');
      setState(() {});
     }
