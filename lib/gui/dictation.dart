@@ -25,6 +25,8 @@ class _DictationInterface extends State<DictationInterface> {
   StreamSubscription streamSub;
   String currentText = " ";
 
+  ScrollController scrollCtlr = ScrollController();
+
   Timer timeout;
 
   @override
@@ -71,6 +73,7 @@ class _DictationInterface extends State<DictationInterface> {
                             child: Container(
                               padding: EdgeInsets.all(10),
                               child: SingleChildScrollView(
+                                controller: scrollCtlr,
                                 scrollDirection: Axis.vertical,
                                 child: Text(currentText),
                               ),
@@ -148,9 +151,10 @@ class _DictationInterface extends State<DictationInterface> {
       currentText += "${input["partial"]}";
     } else {
       currentText = currentText.substring(0, cursorPos);
-      currentText += "${input["text"]}.\n";
-      cursorPos += input["text"].length + 1;
+      currentText += "${input["text"]}\n";
+      cursorPos += input["text"].length + 1; // +1 for \n
     }
+    scrollCtlr.jumpTo(scrollCtlr.position.maxScrollExtent);
     setState(() {
       currentText = currentText;
     });
@@ -174,5 +178,13 @@ class _DictationInterface extends State<DictationInterface> {
       backgroundColor: Color(0x3db5e4),
     );
     _scaffoldKey.currentState.showSnackBar(snackBarError);
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
+    streamSub?.cancel();
+    timeout?.cancel();
+    if (isStreaming) widget.mainController.stopStream();
   }
 }

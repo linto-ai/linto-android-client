@@ -27,6 +27,9 @@ enum VoiceState {
 /// Audio Manager manages audio inputs.
 /// Sound is collected using the Microphone class and processed
 /// frame by frame.
+/// Pipeline is _microphone (raw audio) -> [micStreamSub] -> _onAudioFrames (raw audio)->  [audioStream] ->
+/// -> _utterance (speech frame) -> _onSpeechFrame(speechframe) -> [frameStream] -> _mfcc (features) -> [featureStream] ->
+/// -> _kws
 class AudioManager {
   /// Settings
   Map _settings;
@@ -76,9 +79,10 @@ class AudioManager {
   MicrophoneInput _microphone;
   StreamSubscription<List<int>> micStreamSub;
 
-  /// Audio output
-  StreamController<List<int>> audioStream = StreamController<List<int>>.broadcast();
-  StreamController<List<double>> featureStream = StreamController<List<double>>();
+  /// Streams
+  StreamController<List<int>> audioStream = StreamController<List<int>>.broadcast(); //Raw audio stream
+  StreamController<List<double>> frameStream = StreamController<List<double>>.broadcast(); // Audio frame stream
+  StreamController<List<double>> featureStream; //Feature Stream
 
   /// Keyword spotting
   KWS _kws;
@@ -121,6 +125,7 @@ class AudioManager {
                  _settings['audio']['features']['numCoefs'],
                  energy: _settings['audio']['features']['energy'],
                  preEmphasis: _settings['audio']['features']['preEmp']);
+    featureStream = _mfcc.setStream(frameStream.stream);
     print('initialized');
     _kws = KWS(featureStream.stream);
     await _kws.loadModel('linto_tflite.tflite');
@@ -151,7 +156,7 @@ class AudioManager {
       while (signalBuffer.length >= _settings['audio']['features']['windowLength']) {
         List<double> frame = signalBuffer.sublist(0,1024).toList();
         signalBuffer = signalBuffer.sublist(512).toList();
-        featureStream.add(_mfcc.process_frame(frame));
+        frameStream.add(frame);
       }
     }
   }
@@ -306,6 +311,8 @@ class AudioManager {
   }
 
   void dispose() {
-    audioStream.close();
+    audioStream?.close();
+    _mfcc.cancelStream();
+    frameStream?.close();
   }
 }

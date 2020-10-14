@@ -20,7 +20,7 @@ dependencies:
   flutter:
     sdk: flutter
   flare_flutter: ^1.8.3
-  mfcc: ^1.0.1
+  mfcc: ^1.1.0
   mic_stream:
     git:
       url: https://github.com/zvikarp/mic_stream
