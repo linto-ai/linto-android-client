@@ -41,9 +41,9 @@ class MainController {
   Timer _timeoutTimer;
 
   /// Stop client session
-  void disconnect() {
+  void disconnect({bool rightful : true}) {
     // Disconnect from broker
-    userPreferences.setValue("reconnect", false);
+    userPreferences.setValue("reconnect", rightful);
     client.disconnect();
     // Cut Audio
     audioManager.stopDetecting();

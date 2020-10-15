@@ -6,22 +6,23 @@ import 'package:linto_flutter_client/client/client.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/services.dart' show FilteringTextInputFormatter;
 
-
-/// Scope selection dialog
-Future<ApplicationScope> showScopesDialog(BuildContext context, String title, List<ApplicationScope> options) async {
-  var scope = await showDialog<ApplicationScope>(
-      context: context,
-      builder: (BuildContext context) {
-        return SimpleDialog(
-          title: Text(title),
-          children: listOptions(context, options),
-        );
-      }
-  );
-  return scope;
-}
-
+/// Displays application description dialog and provides a selection button.
+/// Returns Future<True> if application is selected.
 Future<bool> showScopeDialog(BuildContext context, ApplicationScope scope) async {
+  List<Card> skillList(List<dynamic> skills) {
+    if (skills.length == 0) {
+      return [Card(
+        child: Text("No informations provided", textAlign: TextAlign.center,),
+      )];
+    }
+    return skills.map((skill) {
+      return Card(
+        child: Text( skill["name"],
+          textAlign: TextAlign.center,
+        ),
+      );
+    }).toList();
+  }
   var useScope = await showDialog<bool>(
     context: context,
     builder: (BuildContext context) {
@@ -29,44 +30,28 @@ Future<bool> showScopeDialog(BuildContext context, ApplicationScope scope) async
         title: Text(scope.name, textAlign: TextAlign.center,),
         contentPadding: EdgeInsets.all(20),
         children: [
-          Text(scope.description, maxLines: 5,),
-          RaisedButton(
-            child: Text("Use this application"),
-            onPressed: () => Navigator.pop(context, true),
+          Container(
+            width: MediaQuery.of(context).size.width,
+            height: MediaQuery.of(context).size.height * 0.5,
+            child: ListView(
+                  children: [
+                    Text(scope.description, maxLines: 5,),
+                    RaisedButton(
+                      child: Text("Use this application"),
+                      onPressed: () => Navigator.pop(context, true),
+                    ),
+                    Divider(),
+                    Text("Available skills:"),
+                    ...skillList(scope.skills)
+                  ],
+            ),
           ),
-          ]
+        ]
       );
     }
   );
   return useScope;
 }
-
-/// Scope selection items
-List<SimpleDialogOption> listOptions(BuildContext context, List<ApplicationScope> scopes) {
-  List<SimpleDialogOption> dialogOptions = List<SimpleDialogOption>();
-  for (ApplicationScope entry in scopes) {
-    dialogOptions.add( SimpleDialogOption(
-      child: FlatButton(
-        child: Card(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: <Widget>[
-               ListTile(
-                leading: Icon(Icons.blur_circular),
-                title: Text(entry.name),
-                subtitle: Text(entry.description, maxLines: 4,),
-              ),
-            ],
-          ),
-        ),
-        onPressed: () => Navigator.pop(context, entry),
-
-      )
-    ));
-  }
-  return dialogOptions;
-}
-
 /// Route selection dialog
 Future<Map<String, dynamic>> showRoutesDialog(BuildContext context, String title, List<dynamic> options) async {
   var scopeKey = await showDialog<Map<String, dynamic>>(

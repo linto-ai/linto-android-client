@@ -29,6 +29,7 @@ class MQTTClientWrapper {
   String _subTopic;
   String _pubTopic;
   bool _retainStatus = false;
+  bool _requestedDisconnexion = false;
   Map<String, dynamic> deviceInfo;
 
   set onMessage(MQTTMessageCallback cb) {
@@ -151,6 +152,7 @@ class MQTTClientWrapper {
   }
 
   void disconnect() {
+    _requestedDisconnexion = true;
     publish("$_pubTopic$STATUS_TOPIC", {"connexion": "offline", ...deviceInfo}, retain: _retainStatus);
     client.disconnect();
   }

@@ -18,7 +18,7 @@ enum AuthenticationStep{
 }
 
 class LinTOClient {
-  static const String CLIENT_VERSION = "0.2.5";
+  static const String CLIENT_VERSION = "0.2.6";
 
   static const String APIROUTES = "/auths";
   static const String APIAUTHSUFFIX = "/android/login";
@@ -210,6 +210,10 @@ class LinTOClient {
     }
   }
 
+  // #################
+  // APPLICATION SCOPE
+  // #################
+
   /// Request scopes from the server
   /// Should return an array or {topic, name, description}
   /// Throws [ClientErrorException] if an error is encountered.
@@ -229,9 +233,15 @@ class LinTOClient {
         print('Response status: ${response.statusCode}');
         print('Response body: ${response.body}');
         List<dynamic> res;
+        bool streaming;
+        List<dynamic> skills;
         try {
           res = json.decode(response.body);
-          scopes = res.map((scope){return ApplicationScope(scope["topic"], scope["name"] ?? "No name.", scope["description"] ?? "No description");}).toList();
+          scopes = res.map((scope){
+            streaming = (scope["services"]["streaming"] ?? false);
+            skills = scope["skills"] ?? List<dynamic>();
+            return ApplicationScope(scope["topic"], scope["name"] ?? "No name.", scope["description"] ?? "No description", skills, streaming);
+          }).toList();
         } on Exception catch (_) {
           throw ClientErrorException('0x0007');
         }
@@ -259,10 +269,6 @@ class LinTOClient {
       break;
     }
   }
-
-  // #################
-  // APPLICATION SCOPE
-  // #################
 
   /// Sets current application
   /// Connects to the broker and subscribe accordingly.
@@ -410,7 +416,7 @@ class LinTOClient {
     _mqttLogin = login;
     _publishingTopic = "$scope$MQTTEGRESS/$id";
     _subscribingTopic = "$scope$MQTTINGRESS/$id";
-    _selectedScope = ApplicationScope(scope, "Direct connexion", "Direct connexion");
+    _selectedScope = ApplicationScope(scope, "Direct connexion", "Direct connexion", [], false);
     scopes = [_selectedScope];
     await this.connectToBroker(directConnexion: true);
     _authenticated = mqttClient.connectionState == MQTTCurrentConnectionState.CONNECTED;
@@ -449,7 +455,6 @@ class LinTOClient {
     }
   }
 
-
   void pong() {
     sendMessage(Map<String, dynamic>(), subTopic: "/pong");
   }
@@ -477,21 +482,30 @@ class LinTOClient {
     return ret;
   }
 
-
-
   void dispose() {
     msgStream.close();
   }
 }
 
+/// ApplicationScope represent an user application.
+/// It provides system informations such as connexion [topic] and service availability
+/// and user informations like [description] and usable [skills].
 class ApplicationScope {
-  final String topic;
-  final String name;
-  final String description;
-  bool streaming;
-  ApplicationScope(this.topic, this.name, this.description, {bool acceptStreaming : false});
+  final String topic; // Connexion topic (unique identifier).
+  final String name; // Application Name
+  final String description; // Application description.
+  final List<dynamic> skills; // Usable skills.
+  bool streaming; // Either this application allows streaming service.
+
+  ApplicationScope(this.topic, this.name, this.description, this.skills, this.streaming);
+
   Map<String, String> toMap() {
-    return {"topic" : topic, "name" : name, "description" : description};
+    return {"topic" : topic, "name" : name, "description" : description, "streaming" : streaming ? "true" : "false",};
+  }
+
+  /// Returns a List<String> of available skill's names.
+  List<String> availableSkills() {
+    return skills.map((skill) => skill["name"]).toList(growable: false);
   }
 
   @override

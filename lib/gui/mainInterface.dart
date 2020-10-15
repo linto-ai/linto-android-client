@@ -93,48 +93,7 @@ class _MainInterface extends State<MainInterface> implements VoiceUIController{
                    ),
                  ),
                ),
-               Column(
-                 children: [
-                   Text("Recorder", style: TextStyle(color: Colors.lightBlue, fontSize: 18, fontWeight: FontWeight.bold),),
-                   FlatButton(
-                     child: FittedBox(
-                         fit: BoxFit.fill,
-                         child: Icon(Icons.mic_none, color: Color.fromARGB(255, 60,187,242), size: 80,)
-                     ),
-                     onPressed: ()  async {
-                       displayRecorder();
-                     },
-                   ),
-                 ],
-               ),
-               Column(
-                 children: [
-                   Text("Dictation", style: TextStyle(color: Colors.lightBlue, fontSize: 18, fontWeight: FontWeight.bold),),
-                   FlatButton(
-                     child: FittedBox(
-                         fit: BoxFit.fill,
-                         child: Icon(Icons.record_voice_over, color: Color.fromARGB(255, 60,187,242), size: 80,)
-                     ),
-                     onPressed: () async {
-                       _mainController.audioManager.stopDetecting();
-                       await Navigator.popAndPushNamed(context, '/dictation');
-                       if (isListening) _mainController.audioManager.startDetecting();
-                     }
-                   ),
-                 ],
-               ),
-               Column(
-                 children: [
-                   Text("About", style: TextStyle(color: Colors.lightBlue, fontSize: 18, fontWeight: FontWeight.bold),),
-                   FlatButton(
-                     child: FittedBox(
-                         fit: BoxFit.fill,
-                         child: Icon(Icons.help_outline, color: Color.fromARGB(255, 60,187,242), size: 80,)
-                     ),
-                     onPressed: () async => await aboutDialog(context, _mainController.client.version),
-                   )
-                 ],
-               ),
+               ...listTools(context, _mainController.client.currentScope),
              ],
            ),
          ),
@@ -340,10 +299,19 @@ class _MainInterface extends State<MainInterface> implements VoiceUIController{
   void displayRecorder() async {
     _mainController.audioManager.stopDetecting();
     await Navigator.pushNamed(context, '/recorder');
-    if(isListening) {
-      _mainController.audioManager.startDetecting();
-    }
+    if(isListening)  _mainController.audioManager.startDetecting();
+  }
 
+  void displayAbout() async {
+    _mainController.audioManager.stopDetecting();
+    await aboutDialog(context, _mainController.client.version);
+    if(isListening)  _mainController.audioManager.startDetecting();
+  }
+
+  void displayDictation() async {
+    _mainController.audioManager.stopDetecting();
+    await Navigator.popAndPushNamed(context, '/dictation');
+    if (isListening) _mainController.audioManager.startDetecting();
   }
 
   void displaySettings() async {
@@ -390,6 +358,43 @@ class _MainInterface extends State<MainInterface> implements VoiceUIController{
       }
     }
     return availableApplication;
+  }
+
+  /// Returns available in-app tool buttons depending of service availability.
+  List<FlatButton> listTools(BuildContext context, ApplicationScope currentApp) {
+    FlatButton toolShortCut(String name, IconData icon, Function function) {
+      return FlatButton(
+        child: Column(
+          children: [
+            FittedBox(
+              fit: BoxFit.fill,
+              child: Icon(icon, color: Color.fromARGB(255, 60,187,242), size: 80,)
+            ),
+            Text(name, style: TextStyle(color: Colors.lightBlue, fontSize: 18, fontWeight: FontWeight.bold),),
+          ],
+        ),
+        onPressed: () async => function(),
+      );
+    }
+    List<FlatButton> toolButtons = List<FlatButton>();
+    toolButtons.add(
+      toolShortCut("Recorder",
+          Icons.mic_none,
+          () async => displayRecorder()
+          ));
+    if (currentApp.streaming ?? false) {
+      toolButtons.add(
+          toolShortCut("Dictation",
+              Icons.record_voice_over,
+                  () async => displayDictation()
+          ));
+    }
+    toolButtons.add(
+        toolShortCut("About",
+            Icons.help_outline,
+                () async => displayAbout()
+        ));
+    return toolButtons;
   }
 
   @override

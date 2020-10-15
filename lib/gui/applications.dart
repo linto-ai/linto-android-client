@@ -49,7 +49,7 @@ class _Applications extends State<Applications> {
               IconButton(
                 icon: const Icon(Icons.help_outline),
                 onPressed: () async {
-                  await helpDialog(context, MainAxisAlignment.start, "Here you can choose an application.\nSelect an application to access its description. Long press to choose it.");
+                  await helpDialog(context, MainAxisAlignment.start, "Here you can choose an application.\nTap an application to select it. Long press to access its description.");
                   await helpDialog(context, MainAxisAlignment.center, "Applications offer different sets of skills for different usages or locations.");
 
                 },
@@ -91,7 +91,7 @@ class _Applications extends State<Applications> {
                 subtitle: Text(app.description, maxLines: 3,),
             ),
           ),
-          onLongPress: () => onApplicationSelected(app),
+          onLongPress: () => onApplicationLongPress(app),
           onTap: () => onApplicationClicked(app),
         )
       );
@@ -100,19 +100,21 @@ class _Applications extends State<Applications> {
     return applicationWidgets;
   }
 
-  void onApplicationSelected(ApplicationScope app) async {
+  void onApplicationClicked(ApplicationScope app) async {
     _mainController.client.setScope(app);
     _mainController.userPreferences.setValue("cred_app", app.topic);
     await Navigator.pushNamed(context, '/main');
     setState(() {});
   }
 
-  void onApplicationClicked(ApplicationScope app) async {
+  /// Displays application info dialog
+  ///
+  void onApplicationLongPress(ApplicationScope app) async {
     bool res = await showScopeDialog(context, app);
     if(res ?? false){
       _mainController.client.setScope(app);
       _mainController.userPreferences.setValue("cred_app", app.topic);
-     await  Navigator.pushNamed(context, '/main');
+     await Navigator.popAndPushNamed(context, '/main');
      setState(() {});
     }
   }
